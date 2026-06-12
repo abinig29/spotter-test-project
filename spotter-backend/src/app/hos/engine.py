@@ -82,6 +82,10 @@ class _Simulation:
         self._finalize_warning()
 
     def _pickup(self):
+        # Rule 5: don't schedule the on-duty block if it would exceed the 70h cap.
+        if C.PICKUP_DURATION_HOURS > self._cap_remaining() + C.EPS:
+            self.incomplete = True
+            return
         self.window_start = self.clock  # Rule 2/7: window starts at the first on-duty event.
         start = self.clock
         self._add(DutyStatus.ON_DUTY_NOT_DRIVING, C.PICKUP_DURATION_HOURS,
@@ -91,6 +95,10 @@ class _Simulation:
                                C.PICKUP_DURATION_HOURS))
 
     def _dropoff(self):
+        # Rule 5: don't schedule the on-duty block if it would exceed the 70h cap.
+        if C.DROPOFF_DURATION_HOURS > self._cap_remaining() + C.EPS:
+            self.incomplete = True
+            return
         start = self.clock
         self._add(DutyStatus.ON_DUTY_NOT_DRIVING, C.DROPOFF_DURATION_HOURS,
                   self.dropoff_location, "Dropoff")
