@@ -25,9 +25,10 @@ class Rule1_ElevenHourDrivingLimit:
         assert _has_10h_rest(plan)
 
     def test_cumulative_driving_across_segments_stops_at_11(self):
-        # Driving is cumulative across breaks; day 1 still caps at 11h.
+        # Driving accumulates across the mandatory 8h break and still caps at 11h.
         plan = plan_trip(RouteInput(840.0, 14.0), 0.0, START)
-        assert _day1_driving(plan) == 11.0
+        assert any(e.note == "30-min break" for e in plan.entries)  # a break occurred mid-day
+        assert plan.logs[0].totals["driving"] == 11.0                # break did not reset the counter
         assert _has_10h_rest(plan)
 
     def test_driving_under_11_hours_no_forced_rest(self):

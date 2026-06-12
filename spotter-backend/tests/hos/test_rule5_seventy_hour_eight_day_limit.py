@@ -17,6 +17,7 @@ class Rule5_SeventyHourEightDayLimit:
         plan = plan_trip(RouteInput(1200.0, 20.0), 65.0, START)
         assert _on_duty_hours(plan) <= 5.0 + 1e-6
         assert plan.cycle_hours_warning is not None
+        assert plan.incomplete is True
 
     def test_full_cycle_available_when_zero_hours_used(self):
         # 20h driving completes (well under 70h) with no early forced stop.

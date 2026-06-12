@@ -43,3 +43,18 @@ class Rule2_FourteenHourDrivingWindow:
         plan = plan_trip(RouteInput(840.0, 14.0), 0.0, START)
         assert plan.logs[0].totals["driving"] <= 11.0
         assert any(e.status == DutyStatus.SLEEPER_BERTH for e in plan.entries)
+
+    def test_window_binds_before_11_hour_cap_when_many_stops(self):
+        # High mph forces frequent fuel stops, so wall-clock exhausts the 14h
+        # window (ends 8:00pm) before the driver reaches 11h of driving.
+        plan = plan_trip(RouteInput(8000.0, 20.0), 0.0, START)
+        # Day 1 stopped because of the 14h window, so driving is strictly under 11h...
+        assert plan.logs[0].totals["driving"] < 11.0
+        # ...and a 10h sleeper rest is present (the forced reset).
+        assert any(e.status == DutyStatus.SLEEPER_BERTH and round(e.duration_hours, 2) == 10.0
+                   for e in plan.entries)
+        # No Day-1 driving entry runs past the 8:00pm window close.
+        window_end = START + timedelta(hours=14)
+        for e in plan.entries:
+            if e.status == DutyStatus.DRIVING and e.start < window_end:
+                assert e.end <= window_end + timedelta(seconds=1)

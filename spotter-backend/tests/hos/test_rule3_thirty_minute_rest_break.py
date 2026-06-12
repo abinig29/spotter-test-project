@@ -4,7 +4,6 @@ from app.hos.models import RouteInput
 from app.hos.engine import plan_trip
 
 START = datetime(2026, 1, 1, 6)
-BREAK_STATUSES = {DutyStatus.OFF_DUTY, DutyStatus.SLEEPER_BERTH, DutyStatus.ON_DUTY_NOT_DRIVING}
 
 
 def _breaks(plan):
@@ -27,7 +26,7 @@ class Rule3_ThirtyMinuteRestBreak:
         plan = plan_trip(RouteInput(600.0, 10.0), 0.0, START)
         b = _breaks(plan)[0]
         assert round(b.duration_hours, 2) == 0.5
-        assert b.status in BREAK_STATUSES
+        assert b.status == DutyStatus.OFF_DUTY
 
     def test_break_does_not_reset_driving_clock(self):
         # 14h needed: day 1 = 8h + break + 3h = 11h driving, then rest.
