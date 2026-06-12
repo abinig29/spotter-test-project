@@ -1,3 +1,0 @@
-{
-  "extends": "@spotter-frontend/config/tsconfig.base.json"
-}

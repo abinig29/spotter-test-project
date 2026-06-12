@@ -36,14 +36,15 @@ Open [http://localhost:5173](http://localhost:5173) in your browser to see the w
 
 ```
 spotter-frontend/
-├── apps/
-│   ├── web/         # Frontend application (React + Vite SPA)
+├── src/             # Application source
+├── index.html       # Vite entry HTML
+└── vite.config.ts   # Vite configuration
 ```
 
 ## Available Scripts
 
-- `pnpm run dev`: Start all applications in development mode
-- `pnpm run build`: Build all applications
-- `pnpm run dev:web`: Start only the web application
-- `pnpm run check-types`: Check TypeScript types across all apps
+- `pnpm run dev`: Start the development server
+- `pnpm run build`: Build for production
+- `pnpm run serve`: Preview the production build
+- `pnpm run check-types`: Check TypeScript types
 - `pnpm run check`: Run Biome formatting and linting
