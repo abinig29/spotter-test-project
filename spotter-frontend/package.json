@@ -1,0 +1,28 @@
+{
+  "name": "spotter-frontend",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm -r dev",
+    "build": "pnpm -r build",
+    "check-types": "pnpm -r --if-present check-types",
+    "dev:web": "pnpm --filter web dev",
+    "check": "biome check --write ."
+  },
+  "dependencies": {
+    "@spotter-frontend/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.16",
+    "@spotter-frontend/config": "workspace:*",
+    "typescript": "^6.0.3",
+    "vercel": "^54.9.1"
+  },
+  "packageManager": "pnpm@10.17.1"
+}

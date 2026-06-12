@@ -1,0 +1,15 @@
+"""Shared pytest fixtures for spotter-backend."""
+
+import pytest
+
+
+@pytest.fixture
+def sample_user() -> dict[str, str]:
+    """A reusable example user payload."""
+    return {"name": "Ada Lovelace", "email": "ada@example.com"}
+
+
+@pytest.fixture
+def anyio_backend() -> str:
+    """Run async tests on asyncio."""
+    return "asyncio"
