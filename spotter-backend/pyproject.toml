@@ -35,3 +35,5 @@ packages = ["src/app"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+# Collect the PRD-named HOS rule suites (RuleN_*) alongside conventional Test* classes.
+python_classes = ["Test*", "Rule*"]
