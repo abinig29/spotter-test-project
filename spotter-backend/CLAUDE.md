@@ -27,6 +27,9 @@ spotter-backend/
 - `uv run python -m app.main` - Run application
 - `uv run --extra dev pytest` - Run tests
 
+`ORS_API_KEY` (OpenRouteService) is required for `POST /api/trip/plan`; without it the
+endpoint returns 503. Copy `.env.example` to `.env` and set it.
+
 ## Maintenance
 
 Keep CLAUDE.md updated when:
