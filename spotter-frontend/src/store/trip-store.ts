@@ -14,9 +14,12 @@ interface TripState {
   cycleHoursUsed: number;
   placePin: (location: TripLocation) => void;
   changePin: (which: PinKey) => void;
+  back: () => void;
   setCycleHours: (value: number) => void;
   reset: () => void;
 }
+
+const STEPS: Step[] = ["current", "pickup", "dropoff", "complete"];
 
 function nextStep(pins: Pick<TripState, PinKey>): Step {
   for (const key of ORDER) {
@@ -41,6 +44,11 @@ export const useTripStore = create<TripState>((set) => ({
     }),
   changePin: (which) =>
     set({ [which]: undefined, step: which } as Partial<TripState>),
+  back: () =>
+    set((state) => {
+      const index = STEPS.indexOf(state.step);
+      return { step: STEPS[Math.max(0, index - 1)] };
+    }),
   setCycleHours: (value) => set({ cycleHoursUsed: value }),
   reset: () =>
     set({

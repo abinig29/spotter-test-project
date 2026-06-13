@@ -1,5 +1,6 @@
 import "leaflet/dist/leaflet.css";
 
+import type { Marker as LeafletMarker } from "leaflet";
 import { useEffect } from "react";
 import {
   MapContainer,
@@ -14,6 +15,12 @@ import {
 
 import { type PinType, pinIcon } from "@/components/map/pin-icons";
 import type { Stop, TripLocation } from "@/lib/api-types";
+
+export interface CandidateMarker {
+  lat: number;
+  lng: number;
+  type: PinType;
+}
 
 const US_CENTER: [number, number] = [39.5, -98.35];
 
@@ -33,6 +40,21 @@ interface TripMapProps {
   interactive: boolean;
   onPick: (lat: number, lng: number) => void;
   route?: MapRoute;
+  /** When set/changed, the map flies to this coordinate (used by address search). */
+  focus?: [number, number] | null;
+  /** A draggable, not-yet-confirmed location for the active step. */
+  candidate?: CandidateMarker | null;
+  onCandidateDrag?: (lat: number, lng: number) => void;
+}
+
+function RecenterOnFocus({ focus }: { focus?: [number, number] | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (focus) {
+      map.flyTo(focus, Math.max(map.getZoom(), 11), { duration: 0.8 });
+    }
+  }, [focus, map]);
+  return null;
 }
 
 function ClickHandler({
@@ -61,7 +83,15 @@ function FitBounds({ coordinates }: { coordinates: [number, number][] }) {
   return null;
 }
 
-export function TripMap({ pins, interactive, onPick, route }: TripMapProps) {
+export function TripMap({
+  pins,
+  interactive,
+  onPick,
+  route,
+  focus,
+  candidate,
+  onCandidateDrag,
+}: TripMapProps) {
   return (
     <MapContainer
       center={US_CENTER}
@@ -75,6 +105,7 @@ export function TripMap({ pins, interactive, onPick, route }: TripMapProps) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {interactive && <ClickHandler onPick={onPick} />}
+      <RecenterOnFocus focus={focus} />
 
       {!route &&
         pins.map((pin) => (
@@ -89,6 +120,24 @@ export function TripMap({ pins, interactive, onPick, route }: TripMapProps) {
             </Tooltip>
           </Marker>
         ))}
+
+      {!route && candidate && (
+        <Marker
+          position={[candidate.lat, candidate.lng]}
+          icon={pinIcon(candidate.type)}
+          draggable
+          eventHandlers={{
+            dragend: (e) => {
+              const { lat, lng } = (e.target as LeafletMarker).getLatLng();
+              onCandidateDrag?.(lat, lng);
+            },
+          }}
+        >
+          <Tooltip direction="top" offset={[0, -30]}>
+            Drag to fine-tune, then confirm
+          </Tooltip>
+        </Marker>
+      )}
 
       {route && (
         <>

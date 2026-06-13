@@ -1,156 +1,204 @@
-import type { DutyStatus, LogEntry } from "@/lib/api-types";
-import { buildRowSegments } from "@/lib/log-grid";
+import type { DayLog } from "@/lib/api-types";
+import { dutyLinePoints, STATUS_META, STATUS_ROWS } from "@/lib/log-grid";
 
-const ROWS: { status: DutyStatus; label: string; color: string }[] = [
-  { status: "off_duty", label: "Off Duty", color: "#9ca3af" },
-  { status: "sleeper_berth", label: "Sleeper Berth", color: "#60a5fa" },
-  { status: "driving", label: "Driving", color: "#1e3a8a" },
-  { status: "on_duty_not_driving", label: "On Duty (ND)", color: "#6b7280" },
-];
+const HOUR_W = 40;
+const GRID_W = 24 * HOUR_W; // 960
+const LABEL_W = 128;
+const TOTAL_W = 80;
+const ROW_H = 48;
+const AXIS_H = 34;
+const GRID_H = STATUS_ROWS.length * ROW_H; // 144
+const WIDTH = LABEL_W + GRID_W + TOTAL_W;
+const HEIGHT = AXIS_H + GRID_H;
+const GRID_X = LABEL_W;
+const GRID_Y = AXIS_H;
 
-const LABEL_W = 118;
-const GRID_W = 720;
-const TOTAL_W = 70;
-const TOP_H = 22;
-const ROW_H = 34;
-const VIEW_W = LABEL_W + GRID_W + TOTAL_W;
-const VIEW_H = TOP_H + ROWS.length * ROW_H + 6;
+const INK = "#0f172a";
+const GRID_LINE = "#cbd5e1";
+const GRID_LINE_FAINT = "#e7ecf3";
 
-const ROW_INDEX: Record<DutyStatus, number> = {
-  off_duty: 0,
-  sleeper_berth: 1,
-  driving: 2,
-  on_duty_not_driving: 3,
-};
+const QUARTERS = Array.from({ length: 24 * 4 + 1 }, (_, i) => i);
+const HOURS = Array.from({ length: 25 }, (_, i) => i);
+const ROW_LINES = Array.from({ length: STATUS_ROWS.length + 1 }, (_, i) => i);
 
-const HOURS = Array.from({ length: 25 }, (_, hour) => hour);
-
-function rowCenterY(index: number): number {
-  return TOP_H + index * ROW_H + ROW_H / 2;
+function hourLabel(hour: number): string {
+  if (hour === 0 || hour === 24) return "M";
+  if (hour === 12) return "N";
+  return String(hour % 12);
 }
 
-function hourX(hour: number): number {
-  return LABEL_W + (hour / 24) * GRID_W;
-}
-
-interface LogGridProps {
-  entries: LogEntry[];
-  totals: Record<DutyStatus, number>;
-}
-
-export function LogGrid({ entries, totals }: LogGridProps) {
-  const segments = buildRowSegments(entries, GRID_W);
-  const total = ROWS.reduce((sum, row) => sum + (totals[row.status] ?? 0), 0);
+export function LogGrid({ day }: { day: DayLog }) {
+  const points = dutyLinePoints(day.entries, GRID_W, ROW_H)
+    .map(([x, y]) => `${(GRID_X + x).toFixed(1)},${(GRID_Y + y).toFixed(1)}`)
+    .join(" ");
 
   return (
     <svg
-      viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-      className="h-auto w-full"
+      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+      className="block h-auto w-full"
       role="img"
-      aria-label={`24-hour duty status grid: off duty ${(totals.off_duty ?? 0).toFixed(1)}h, sleeper berth ${(totals.sleeper_berth ?? 0).toFixed(1)}h, driving ${(totals.driving ?? 0).toFixed(1)}h, on duty not driving ${(totals.on_duty_not_driving ?? 0).toFixed(1)}h, total ${total.toFixed(1)}h`}
+      aria-label={`Duty status grid for day ${day.day}`}
+      preserveAspectRatio="xMidYMid meet"
     >
-      <rect x={0} y={0} width={VIEW_W} height={VIEW_H} fill="#ffffff" />
+      <title>{`Day ${day.day} duty status grid`}</title>
 
-      {/* hour gridlines + axis labels */}
-      {HOURS.map((hour) => (
-        <g key={`h-${hour}`}>
-          <line
-            x1={hourX(hour)}
-            y1={TOP_H}
-            x2={hourX(hour)}
-            y2={TOP_H + ROWS.length * ROW_H}
-            stroke={hour % 6 === 0 ? "#9ca3af" : "#e5e7eb"}
-            strokeWidth={hour % 6 === 0 ? 1 : 0.5}
-          />
-          {hour % 2 === 0 && (
+      {/* Row bands + left labels */}
+      {STATUS_ROWS.map((status, row) => {
+        const y = GRID_Y + row * ROW_H;
+        const meta = STATUS_META[status];
+        return (
+          <g key={status}>
+            <rect
+              x={GRID_X}
+              y={y}
+              width={GRID_W}
+              height={ROW_H}
+              fill={meta.band}
+            />
+            <rect
+              x={LABEL_W - 7}
+              y={y + ROW_H / 2 - 7}
+              width={4}
+              height={14}
+              rx={1}
+              fill={meta.color}
+            />
             <text
-              x={hourX(hour)}
-              y={TOP_H - 8}
-              fontSize={9}
-              fill="#374151"
-              textAnchor="middle"
+              x={LABEL_W - 14}
+              y={y + ROW_H / 2}
+              textAnchor="end"
+              dominantBaseline="central"
+              fontSize="11"
+              fontWeight="600"
+              fill="#334155"
             >
-              {hour === 0 || hour === 24 ? "M" : hour === 12 ? "N" : hour}
+              {meta.label}
             </text>
-          )}
-        </g>
-      ))}
+          </g>
+        );
+      })}
 
-      {/* rows: labels, baselines, totals */}
-      {ROWS.map((row, index) => (
-        <g key={row.status}>
-          <text
-            x={LABEL_W - 8}
-            y={rowCenterY(index) + 3}
-            fontSize={11}
-            fill="#111827"
-            textAnchor="end"
-          >
-            {row.label}
-          </text>
-          <line
-            x1={LABEL_W}
-            y1={TOP_H + (index + 1) * ROW_H}
-            x2={LABEL_W + GRID_W}
-            y2={TOP_H + (index + 1) * ROW_H}
-            stroke="#e5e7eb"
-            strokeWidth={0.5}
-          />
-          <text
-            x={LABEL_W + GRID_W + TOTAL_W / 2}
-            y={rowCenterY(index) + 3}
-            fontSize={11}
-            fill="#111827"
-            textAnchor="middle"
-          >
-            {(totals[row.status] ?? 0).toFixed(1)}
-          </text>
-        </g>
-      ))}
-
-      {/* status lines */}
-      {segments.map((seg) => (
-        <line
-          key={`seg-${seg.status}-${seg.x1}-${seg.x2}`}
-          x1={LABEL_W + seg.x1}
-          y1={rowCenterY(ROW_INDEX[seg.status])}
-          x2={LABEL_W + seg.x2}
-          y2={rowCenterY(ROW_INDEX[seg.status])}
-          stroke={ROWS[ROW_INDEX[seg.status]]?.color ?? "#111827"}
-          strokeWidth={3}
-          strokeLinecap="round"
-        />
-      ))}
-
-      {/* vertical connectors at status changes */}
-      {segments.slice(1).map((seg, i) => {
-        const prev = segments[i];
-        if (!prev) return null;
-        const x = LABEL_W + seg.x1;
+      {/* Quarter-hour faint ticks */}
+      {QUARTERS.map((i) => {
+        if (i % 4 === 0) return null;
+        const x = GRID_X + (i / 4) * HOUR_W;
         return (
           <line
-            key={`conn-${prev.status}-${seg.status}-${x}`}
+            key={`q-${i}`}
             x1={x}
-            y1={rowCenterY(ROW_INDEX[prev.status])}
+            y1={GRID_Y}
             x2={x}
-            y2={rowCenterY(ROW_INDEX[seg.status])}
-            stroke="#374151"
-            strokeWidth={1.5}
+            y2={GRID_Y + GRID_H}
+            stroke={GRID_LINE_FAINT}
+            strokeWidth={1}
           />
         );
       })}
 
-      {/* total label */}
+      {/* Hour gridlines + top axis labels */}
+      {HOURS.map((hour) => {
+        const x = GRID_X + hour * HOUR_W;
+        const onClock = hour % 12 === 0;
+        return (
+          <g key={`h-${hour}`}>
+            <line
+              x1={x}
+              y1={GRID_Y}
+              x2={x}
+              y2={GRID_Y + GRID_H}
+              stroke={GRID_LINE}
+              strokeWidth={onClock ? 1.5 : 1.1}
+            />
+            <text
+              x={x}
+              y={GRID_Y - 9}
+              textAnchor="middle"
+              fontSize={onClock ? 11 : 10}
+              fontWeight={onClock ? 700 : 500}
+              fill={onClock ? "#1e293b" : "#64748b"}
+            >
+              {hourLabel(hour)}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Horizontal row separators */}
+      {ROW_LINES.map((row) => {
+        const y = GRID_Y + row * ROW_H;
+        return (
+          <line
+            key={`row-${row}`}
+            x1={GRID_X}
+            y1={y}
+            x2={GRID_X + GRID_W}
+            y2={y}
+            stroke={GRID_LINE}
+            strokeWidth={1}
+          />
+        );
+      })}
+
+      {/* Outer grid border */}
+      <rect
+        x={GRID_X}
+        y={GRID_Y}
+        width={GRID_W}
+        height={GRID_H}
+        fill="none"
+        stroke={INK}
+        strokeWidth={1.25}
+      />
+
+      {/* The duty-status trace */}
+      {points && (
+        <polyline
+          points={points}
+          fill="none"
+          stroke={INK}
+          strokeWidth={2.4}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      )}
+
+      {/* Totals column */}
+      <line
+        x1={GRID_X + GRID_W}
+        y1={GRID_Y}
+        x2={GRID_X + GRID_W}
+        y2={GRID_Y + GRID_H}
+        stroke={INK}
+        strokeWidth={1.25}
+      />
       <text
-        x={LABEL_W + GRID_W + TOTAL_W / 2}
-        y={VIEW_H - 2}
-        fontSize={10}
-        fill="#111827"
+        x={GRID_X + GRID_W + TOTAL_W / 2}
+        y={GRID_Y - 10}
         textAnchor="middle"
-        fontWeight="bold"
+        fontSize="9"
+        fontWeight="600"
+        fill="#64748b"
       >
-        {total.toFixed(1)}
+        Total
       </text>
+      {STATUS_ROWS.map((status, row) => {
+        const y = GRID_Y + row * ROW_H + ROW_H / 2;
+        return (
+          <text
+            key={`t-${status}`}
+            x={GRID_X + GRID_W + TOTAL_W / 2}
+            y={y}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize="13"
+            fontWeight="600"
+            fill={INK}
+            style={{ fontVariantNumeric: "tabular-nums" }}
+          >
+            {day.totals[status].toFixed(1)}
+          </text>
+        );
+      })}
     </svg>
   );
 }

@@ -24,7 +24,7 @@ beforeEach(() => useTripStore.getState().reset());
 describe("TripPlanner page", () => {
   it("renders the first placement step", () => {
     renderPage();
-    expect(screen.getByText(/Step 1 of 3/i)).toBeInTheDocument();
+    expect(screen.getByText(/Plan your trip/i)).toBeInTheDocument();
     expect(screen.getByTestId("trip-map")).toBeInTheDocument();
   });
 });

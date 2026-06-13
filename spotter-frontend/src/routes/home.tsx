@@ -1,31 +1,23 @@
 import { useMutation } from "@tanstack/react-query";
-import { AlertCircle, MapPinned, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { LogSheets } from "@/components/logs/log-sheets";
-import { type MapPin, TripMap } from "@/components/map/trip-map";
-import { LocationSummary } from "@/components/trip/location-summary";
-import { StepIndicator } from "@/components/trip/step-indicator";
-import { TripControls } from "@/components/trip/trip-controls";
-import { TripWarning } from "@/components/trip/trip-warning";
 import {
-  Alert,
-  AlertAction,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+  type CandidateMarker,
+  type MapPin,
+  TripMap,
+} from "@/components/map/trip-map";
+import { ResultsView } from "@/components/results/results-view";
+import { WizardPanel } from "@/components/wizard/wizard-panel";
 import { planTrip, TripPlanError } from "@/lib/api";
-import type { TripPlanResponse } from "@/lib/api-types";
-import { reverseGeocode } from "@/lib/geocode";
-import { selectIsReady, useTripStore } from "@/store/trip-store";
+import type { TripLocation, TripPlanResponse } from "@/lib/api-types";
+import { type AddressResult, reverseGeocode } from "@/lib/geocode";
+import { type PinKey, useTripStore } from "@/store/trip-store";
 
 function buildPins(
-  current?: MapPin["location"],
-  pickup?: MapPin["location"],
-  dropoff?: MapPin["location"],
+  current?: TripLocation,
+  pickup?: TripLocation,
+  dropoff?: TripLocation,
 ): MapPin[] {
   const pins: MapPin[] = [];
   if (current)
@@ -36,19 +28,11 @@ function buildPins(
   return pins;
 }
 
-function PlanSkeleton() {
-  return (
-    <div className="flex flex-col gap-2 rounded-md border bg-card p-3">
-      <Skeleton className="h-4 w-24 rounded-sm" />
-      <Skeleton className="h-3 w-40 rounded-sm" />
-      <Skeleton className="h-3 w-32 rounded-sm" />
-    </div>
-  );
-}
-
 export default function Home() {
   const store = useTripStore();
   const [resolving, setResolving] = useState(false);
+  const [focus, setFocus] = useState<[number, number] | null>(null);
+  const [candidate, setCandidate] = useState<TripLocation | null>(null);
   const [plan, setPlan] = useState<TripPlanResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -71,14 +55,60 @@ export default function Home() {
     },
   });
 
+  // Map click drops a candidate (not yet committed) for the active step.
   async function handlePick(lat: number, lng: number) {
     setResolving(true);
     try {
       const address = await reverseGeocode(lat, lng);
-      store.placePin({ lat, lng, address });
+      setCandidate({ lat, lng, address });
     } finally {
       setResolving(false);
     }
+  }
+
+  // Searching a place drops a candidate and recenters the map there.
+  function handleSearchSelect(result: AddressResult) {
+    setFocus([result.lat, result.lng]);
+    setCandidate({
+      lat: result.lat,
+      lng: result.lng,
+      address: result.label,
+    });
+  }
+
+  // Dragging the candidate marker re-resolves its address.
+  async function handleCandidateDrag(lat: number, lng: number) {
+    setResolving(true);
+    try {
+      const address = await reverseGeocode(lat, lng);
+      setCandidate({ lat, lng, address });
+    } finally {
+      setResolving(false);
+    }
+  }
+
+  // Confirm commits the candidate to the active step and advances.
+  function handleConfirm() {
+    if (!candidate) return;
+    store.placePin(candidate);
+    setCandidate(null);
+  }
+
+  function handleChangePin(key: PinKey) {
+    const existing = store[key];
+    store.changePin(key);
+    if (existing) {
+      setCandidate(existing);
+      setFocus([existing.lat, existing.lng]);
+    } else {
+      setCandidate(null);
+    }
+  }
+
+  function handleStartOver() {
+    store.reset();
+    setCandidate(null);
+    setFocus(null);
   }
 
   function handleCalculate() {
@@ -94,122 +124,53 @@ export default function Home() {
 
   function handleReset() {
     store.reset();
+    setCandidate(null);
+    setFocus(null);
     setPlan(null);
     setErrorMessage(null);
     mutation.reset();
   }
 
-  const ready = selectIsReady(store);
+  if (plan) {
+    return (
+      <ResultsView plan={plan} current={store.current} onReset={handleReset} />
+    );
+  }
+
   const pins = buildPins(store.current, store.pickup, store.dropoff);
-  const hasAnyPin = pins.length > 0;
+  const candidateMarker: CandidateMarker | null =
+    candidate && store.step !== "complete"
+      ? { lat: candidate.lat, lng: candidate.lng, type: store.step as PinKey }
+      : null;
 
   return (
-    <main className="flex h-full flex-col gap-4 overflow-y-auto p-4">
-      <div className="grid min-h-0 grid-rows-[minmax(320px,1fr)_auto] gap-4 lg:grid-cols-[1fr_360px] lg:grid-rows-1">
-        <section className="relative min-h-[320px] overflow-hidden rounded-lg border bg-muted lg:h-[60vh]">
-          <TripMap
-            pins={pins}
-            interactive={store.step !== "complete" && !plan}
-            onPick={handlePick}
-            route={plan ? plan.route : undefined}
-          />
-          {resolving && (
-            <div className="absolute top-3 right-3 z-[1000] flex items-center gap-2 rounded-md border bg-card/95 px-3 py-1.5 text-xs shadow-sm backdrop-blur">
-              <span className="size-2 animate-pulse rounded-full bg-primary motion-reduce:animate-none" />
-              Resolving address…
-            </div>
-          )}
-        </section>
-
-        <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto lg:w-[360px]">
-          <div className="flex items-center justify-between gap-2">
-            <h1 className="font-medium text-sm">Plan a trip</h1>
-            {hasAnyPin && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9"
-                onClick={handleReset}
-                aria-label="Reset all locations and start over"
-              >
-                <RotateCcw className="size-3.5" aria-hidden="true" />
-                Reset
-              </Button>
-            )}
-          </div>
-
-          <StepIndicator step={store.step} />
-
-          <LocationSummary
-            current={store.current}
-            pickup={store.pickup}
-            dropoff={store.dropoff}
-            step={store.step}
-            onChange={store.changePin}
-          />
-
-          <TripControls
-            cycleHours={store.cycleHoursUsed}
-            onCycleHoursChange={store.setCycleHours}
-            onCalculate={handleCalculate}
-            disabled={!ready}
-            loading={mutation.isPending}
-          />
-
-          {errorMessage && !mutation.isPending && (
-            <Alert variant="destructive">
-              <AlertCircle className="size-4" aria-hidden="true" />
-              <AlertTitle>Could not plan trip</AlertTitle>
-              <AlertDescription>{errorMessage}</AlertDescription>
-              <AlertAction>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8"
-                  onClick={handleCalculate}
-                  disabled={!ready}
-                >
-                  Retry
-                </Button>
-              </AlertAction>
-            </Alert>
-          )}
-
-          {mutation.isPending && <PlanSkeleton />}
-
-          {plan?.cycle_hours_warning && (
-            <TripWarning message={plan.cycle_hours_warning} />
-          )}
-
-          {plan && !mutation.isPending && (
-            <div className="rounded-md border bg-card p-3 text-sm">
-              <p className="font-medium">Trip planned</p>
-              <p className="text-muted-foreground">
-                {plan.route.total_miles} mi · {plan.logs.length} day
-                {plan.logs.length === 1 ? "" : "s"}
-              </p>
-            </div>
-          )}
-
-          {!plan && !mutation.isPending && !errorMessage && (
-            <div className="flex flex-col items-center gap-2 rounded-md border border-dashed bg-card/50 px-4 py-6 text-center">
-              <MapPinned
-                className="size-6 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <p className="text-muted-foreground text-sm">
-                Place all three pins and enter cycle hours to calculate a trip.
-              </p>
-            </div>
-          )}
-        </aside>
+    <main className="flex h-svh flex-col lg:flex-row">
+      {/* Guided form panel */}
+      <div className="order-2 flex min-h-0 flex-1 flex-col border-t lg:order-1 lg:w-1/2 lg:border-t-0 lg:border-r">
+        <WizardPanel
+          resolving={resolving}
+          calculating={mutation.isPending}
+          errorMessage={errorMessage}
+          candidate={candidate}
+          onCalculate={handleCalculate}
+          onSearchSelect={handleSearchSelect}
+          onConfirm={handleConfirm}
+          onChangePin={handleChangePin}
+          onStartOver={handleStartOver}
+        />
       </div>
 
-      {plan && (
-        <section className="pt-2">
-          <LogSheets logs={plan.logs} />
-        </section>
-      )}
+      {/* Map */}
+      <aside className="order-1 h-[38vh] shrink-0 lg:order-2 lg:h-auto lg:w-1/2 lg:max-w-none">
+        <TripMap
+          pins={pins}
+          interactive={store.step !== "complete" && !resolving}
+          onPick={handlePick}
+          focus={focus}
+          candidate={candidateMarker}
+          onCandidateDrag={handleCandidateDrag}
+        />
+      </aside>
     </main>
   );
 }
