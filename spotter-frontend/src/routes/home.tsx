@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TripPlanError, planTrip } from "@/lib/api";
+import { planTrip, TripPlanError } from "@/lib/api";
 import type { TripPlanResponse } from "@/lib/api-types";
 import { reverseGeocode } from "@/lib/geocode";
 import { selectIsReady, useTripStore } from "@/store/trip-store";
@@ -27,9 +27,11 @@ function buildPins(
   dropoff?: MapPin["location"],
 ): MapPin[] {
   const pins: MapPin[] = [];
-  if (current) pins.push({ type: "current", label: "Current", location: current });
+  if (current)
+    pins.push({ type: "current", label: "Current", location: current });
   if (pickup) pins.push({ type: "pickup", label: "Pickup", location: pickup });
-  if (dropoff) pins.push({ type: "dropoff", label: "Dropoff", location: dropoff });
+  if (dropoff)
+    pins.push({ type: "dropoff", label: "Dropoff", location: dropoff });
   return pins;
 }
 
@@ -58,9 +60,13 @@ export default function Home() {
     },
     onError: (error) => {
       const message =
-        error instanceof TripPlanError ? error.message : "Something went wrong.";
+        error instanceof TripPlanError
+          ? error.message
+          : "Something went wrong.";
       setErrorMessage(message);
-      toast.error(message, { action: { label: "Retry", onClick: handleCalculate } });
+      toast.error(message, {
+        action: { label: "Retry", onClick: handleCalculate },
+      });
     },
   });
 
@@ -188,7 +194,7 @@ export default function Home() {
               className="size-6 text-muted-foreground"
               aria-hidden="true"
             />
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Place all three pins and enter cycle hours to calculate a trip.
             </p>
           </div>

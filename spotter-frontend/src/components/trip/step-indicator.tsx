@@ -36,17 +36,16 @@ export function StepIndicator({ step }: { step: Step }) {
         {STEP_ORDER.slice(0, 3).map((key, index) => {
           const isDone = index < activeIndex;
           const isActive = index === activeIndex && !done;
+          const color =
+            isDone || done
+              ? "bg-green-500"
+              : isActive
+                ? "bg-primary"
+                : "bg-muted";
           return (
             <span
               key={key}
-              className={
-                "h-1 flex-1 rounded-full transition-colors duration-200 motion-reduce:transition-none " +
-                (isDone || done
-                  ? "bg-green-500"
-                  : isActive
-                    ? "bg-primary"
-                    : "bg-muted")
-              }
+              className={`h-1 flex-1 rounded-full transition-colors duration-200 motion-reduce:transition-none ${color}`}
             />
           );
         })}

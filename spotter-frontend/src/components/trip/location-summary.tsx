@@ -59,14 +59,14 @@ export function LocationSummary({
           <li
             key={row.key}
             data-active={isActive || undefined}
-            className="flex min-h-11 items-center gap-3 rounded-md border bg-card px-3 py-2 transition-colors duration-150 motion-reduce:transition-none data-[active]:border-primary/60 data-[active]:bg-primary/5"
+            className="flex min-h-11 items-center gap-3 rounded-md border bg-card px-3 py-2 transition-colors duration-150 data-[active]:border-primary/60 data-[active]:bg-primary/5 motion-reduce:transition-none"
           >
             <row.icon
               className={`size-4 shrink-0 ${row.location ? row.color : "text-muted-foreground"}`}
               aria-hidden="true"
             />
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground">{row.label}</p>
+              <p className="text-muted-foreground text-xs">{row.label}</p>
               <p
                 className={`truncate text-sm ${row.location ? "" : "text-muted-foreground italic"}`}
                 title={row.location?.address}
