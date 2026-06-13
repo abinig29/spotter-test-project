@@ -110,9 +110,9 @@ export function TripMap({ pins, interactive, onPick, route }: TripMapProps) {
                 </Tooltip>
               </Marker>
             ))}
-          {route.stops.map((stop, index) => (
+          {route.stops.map((stop) => (
             <Marker
-              key={`${stop.type}-${index}`}
+              key={`${stop.type}-${stop.lat}-${stop.lng}-${stop.arrival}`}
               position={[stop.lat, stop.lng]}
               icon={pinIcon(stop.type)}
             >

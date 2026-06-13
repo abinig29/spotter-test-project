@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildRowSegments, timeToX } from "@/lib/log-grid";
 import type { LogEntry } from "@/lib/api-types";
+import { buildRowSegments, timeToX } from "@/lib/log-grid";
 
 describe("log-grid helpers", () => {
   it("maps times to x across the full width", () => {

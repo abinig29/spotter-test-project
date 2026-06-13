@@ -23,6 +23,8 @@ const ROW_INDEX: Record<DutyStatus, number> = {
   on_duty_not_driving: 3,
 };
 
+const HOURS = Array.from({ length: 25 }, (_, hour) => hour);
+
 function rowCenterY(index: number): number {
   return TOP_H + index * ROW_H + ROW_H / 2;
 }
@@ -50,7 +52,7 @@ export function LogGrid({ entries, totals }: LogGridProps) {
       <rect x={0} y={0} width={VIEW_W} height={VIEW_H} fill="#ffffff" />
 
       {/* hour gridlines + axis labels */}
-      {Array.from({ length: 25 }, (_, hour) => (
+      {HOURS.map((hour) => (
         <g key={`h-${hour}`}>
           <line
             x1={hourX(hour)}
@@ -107,9 +109,9 @@ export function LogGrid({ entries, totals }: LogGridProps) {
       ))}
 
       {/* status lines */}
-      {segments.map((seg, idx) => (
+      {segments.map((seg) => (
         <line
-          key={`seg-${idx}-${seg.x1}`}
+          key={`seg-${seg.status}-${seg.x1}-${seg.x2}`}
           x1={LABEL_W + seg.x1}
           y1={rowCenterY(ROW_INDEX[seg.status])}
           x2={LABEL_W + seg.x2}
@@ -127,7 +129,7 @@ export function LogGrid({ entries, totals }: LogGridProps) {
         const x = LABEL_W + seg.x1;
         return (
           <line
-            key={`conn-${i}-${x}`}
+            key={`conn-${prev.status}-${seg.status}-${x}`}
             x1={x}
             y1={rowCenterY(ROW_INDEX[prev.status])}
             x2={x}
