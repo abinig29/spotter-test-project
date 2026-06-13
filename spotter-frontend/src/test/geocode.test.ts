@@ -3,7 +3,13 @@ import { fallbackLabel, parseAddress } from "@/lib/geocode";
 
 describe("geocode helpers", () => {
   it("formats city + state code from ISO", () => {
-    const data = { address: { city: "St. Louis", state: "Missouri", "ISO3166-2-lvl4": "US-MO" } };
+    const data = {
+      address: {
+        city: "St. Louis",
+        state: "Missouri",
+        "ISO3166-2-lvl4": "US-MO",
+      },
+    };
     expect(parseAddress(data, 38.6, -90.2)).toBe("St. Louis, MO");
   });
 

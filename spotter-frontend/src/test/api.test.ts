@@ -10,7 +10,12 @@ const REQUEST: TripPlanRequest = {
 };
 
 const SAMPLE = {
-  route: { total_miles: 470, total_driving_hours: 7.2, coordinates: [[41.85, -87.65]], stops: [] },
+  route: {
+    total_miles: 470,
+    total_driving_hours: 7.2,
+    coordinates: [[41.85, -87.65]],
+    stops: [],
+  },
   cycle_hours_warning: null,
   logs: [],
 };
@@ -18,9 +23,16 @@ const SAMPLE = {
 afterEach(() => vi.unstubAllGlobals());
 
 function stubFetch(status: number, body: unknown) {
-  vi.stubGlobal("fetch", vi.fn(async () =>
-    new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } }),
-  ));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(JSON.stringify(body), {
+          status,
+          headers: { "Content-Type": "application/json" },
+        }),
+    ),
+  );
 }
 
 describe("planTrip", () => {
@@ -32,14 +44,17 @@ describe("planTrip", () => {
 
   it("maps 503 to a not_configured error", async () => {
     stubFetch(503, { error: "Routing not configured." });
-    await expect(planTrip(REQUEST)).rejects.toMatchObject({ kind: "not_configured" });
+    await expect(planTrip(REQUEST)).rejects.toMatchObject({
+      kind: "not_configured",
+    });
   });
 
   it("maps 422 to an unroutable error with the PRD message", async () => {
     stubFetch(422, { error: "x" });
     await expect(planTrip(REQUEST)).rejects.toMatchObject({
       kind: "unroutable",
-      message: "Could not resolve a valid driving location. Please click on a road or city.",
+      message:
+        "Could not resolve a valid driving location. Please click on a road or city.",
     });
   });
 
@@ -49,7 +64,12 @@ describe("planTrip", () => {
   });
 
   it("maps a thrown fetch to a network error", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("down"); }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("down");
+      }),
+    );
     await expect(planTrip(REQUEST)).rejects.toBeInstanceOf(TripPlanError);
   });
 });

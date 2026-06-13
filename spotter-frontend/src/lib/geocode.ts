@@ -18,22 +18,33 @@ export function fallbackLabel(lat: number, lng: number): string {
   return `Near ${lat.toFixed(2)}, ${lng.toFixed(2)}`;
 }
 
-export function parseAddress(data: NominatimResponse, lat: number, lng: number): string {
+export function parseAddress(
+  data: NominatimResponse,
+  lat: number,
+  lng: number,
+): string {
   const address = data.address ?? {};
-  const city = address.city || address.town || address.village || address.county;
+  const city =
+    address.city || address.town || address.village || address.county;
   const iso = address["ISO3166-2-lvl4"];
   const stateCode = iso && iso.includes("-") ? iso.split("-").pop() : undefined;
   const label = stateCode || address.state;
   if (city && label) return `${city}, ${label}`;
   if (city) return city;
-  if (data.display_name) return data.display_name.split(",")[0] ?? fallbackLabel(lat, lng);
+  if (data.display_name)
+    return data.display_name.split(",")[0] ?? fallbackLabel(lat, lng);
   return fallbackLabel(lat, lng);
 }
 
-export async function reverseGeocode(lat: number, lng: number): Promise<string> {
+export async function reverseGeocode(
+  lat: number,
+  lng: number,
+): Promise<string> {
   try {
     const url = `${NOMINATIM_URL}?lat=${lat}&lon=${lng}&format=jsonv2`;
-    const response = await fetch(url, { headers: { Accept: "application/json" } });
+    const response = await fetch(url, {
+      headers: { Accept: "application/json" },
+    });
     if (!response.ok) return fallbackLabel(lat, lng);
     return parseAddress((await response.json()) as NominatimResponse, lat, lng);
   } catch {

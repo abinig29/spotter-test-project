@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { selectIsReady, useTripStore } from "@/store/trip-store";
 
-const loc = (lat: number, lng: number) => ({ lat, lng, address: `${lat},${lng}` });
+const loc = (lat: number, lng: number) => ({
+  lat,
+  lng,
+  address: `${lat},${lng}`,
+});
 
 beforeEach(() => useTripStore.getState().reset());
 

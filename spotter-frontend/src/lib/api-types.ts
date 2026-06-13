@@ -1,4 +1,8 @@
-export type DutyStatus = "off_duty" | "sleeper_berth" | "driving" | "on_duty_not_driving";
+export type DutyStatus =
+  | "off_duty"
+  | "sleeper_berth"
+  | "driving"
+  | "on_duty_not_driving";
 
 export interface LatLng {
   lat: number;

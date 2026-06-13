@@ -39,7 +39,8 @@ export const useTripStore = create<TripState>((set) => ({
       };
       return { [active]: location, step: nextStep(pins) } as Partial<TripState>;
     }),
-  changePin: (which) => set({ [which]: undefined, step: which } as Partial<TripState>),
+  changePin: (which) =>
+    set({ [which]: undefined, step: which } as Partial<TripState>),
   setCycleHours: (value) => set({ cycleHoursUsed: value }),
   reset: () =>
     set({
