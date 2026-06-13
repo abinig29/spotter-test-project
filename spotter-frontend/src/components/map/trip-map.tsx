@@ -1,15 +1,19 @@
 import "leaflet/dist/leaflet.css";
 
+import { useEffect } from "react";
 import {
   MapContainer,
   Marker,
+  Polyline,
+  Popup,
   TileLayer,
   Tooltip,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
 
 import { type PinType, pinIcon } from "@/components/map/pin-icons";
-import type { TripLocation } from "@/lib/api-types";
+import type { Stop, TripLocation } from "@/lib/api-types";
 
 const US_CENTER: [number, number] = [39.5, -98.35];
 
@@ -19,10 +23,16 @@ export interface MapPin {
   location: TripLocation;
 }
 
+export interface MapRoute {
+  coordinates: [number, number][];
+  stops: Stop[];
+}
+
 interface TripMapProps {
   pins: MapPin[];
   interactive: boolean;
   onPick: (lat: number, lng: number) => void;
+  route?: MapRoute;
 }
 
 function ClickHandler({
@@ -38,7 +48,20 @@ function ClickHandler({
   return null;
 }
 
-export function TripMap({ pins, interactive, onPick }: TripMapProps) {
+function FitBounds({ coordinates }: { coordinates: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (coordinates.length > 1) {
+      map.fitBounds(coordinates, { padding: [40, 40] });
+    } else if (coordinates.length === 1) {
+      const first = coordinates[0];
+      if (first) map.setView(first, 9);
+    }
+  }, [coordinates, map]);
+  return null;
+}
+
+export function TripMap({ pins, interactive, onPick, route }: TripMapProps) {
   return (
     <MapContainer
       center={US_CENTER}
@@ -52,18 +75,61 @@ export function TripMap({ pins, interactive, onPick }: TripMapProps) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {interactive && <ClickHandler onPick={onPick} />}
-      {pins.map((pin) => (
-        <Marker
-          key={pin.type}
-          position={[pin.location.lat, pin.location.lng]}
-          icon={pinIcon(pin.type)}
-        >
-          <Tooltip direction="top" offset={[0, -30]}>
-            <span className="font-medium">{pin.label}:</span>{" "}
-            {pin.location.address}
-          </Tooltip>
-        </Marker>
-      ))}
+
+      {!route &&
+        pins.map((pin) => (
+          <Marker
+            key={pin.type}
+            position={[pin.location.lat, pin.location.lng]}
+            icon={pinIcon(pin.type)}
+          >
+            <Tooltip direction="top" offset={[0, -30]}>
+              <span className="font-medium">{pin.label}:</span>{" "}
+              {pin.location.address}
+            </Tooltip>
+          </Marker>
+        ))}
+
+      {route && (
+        <>
+          <Polyline
+            positions={route.coordinates}
+            pathOptions={{ color: "#2563eb", weight: 4, opacity: 0.85 }}
+          />
+          {pins
+            .filter((pin) => pin.type === "current")
+            .map((pin) => (
+              <Marker
+                key="current"
+                position={[pin.location.lat, pin.location.lng]}
+                icon={pinIcon("current")}
+              >
+                <Tooltip direction="top" offset={[0, -30]}>
+                  <span className="font-medium">Current:</span>{" "}
+                  {pin.location.address}
+                </Tooltip>
+              </Marker>
+            ))}
+          {route.stops.map((stop) => (
+            <Marker
+              key={`${stop.type}-${stop.lat}-${stop.lng}-${stop.arrival}`}
+              position={[stop.lat, stop.lng]}
+              icon={pinIcon(stop.type)}
+            >
+              <Popup>
+                <div className="text-xs">
+                  <p className="font-semibold capitalize">{stop.type}</p>
+                  <p>{stop.location}</p>
+                  <p>
+                    Arrival {stop.arrival} · {stop.duration_hours}h
+                  </p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+          <FitBounds coordinates={route.coordinates} />
+        </>
+      )}
     </MapContainer>
   );
 }
