@@ -34,6 +34,7 @@ class Stop:
     lng: float | None
     arrival: datetime
     duration_hours: float
+    mile_marker: float = 0.0
 
 
 @dataclass

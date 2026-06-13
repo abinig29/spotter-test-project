@@ -92,7 +92,7 @@ class _Simulation:
                   self.pickup_location, "Pickup")
         self.cycle_used += C.PICKUP_DURATION_HOURS
         self.stops.append(Stop("pickup", self.pickup_location, None, None, start,
-                               C.PICKUP_DURATION_HOURS))
+                               C.PICKUP_DURATION_HOURS, mile_marker=0.0))
 
     def _dropoff(self):
         # Rule 5: don't schedule the on-duty block if it would exceed the 70h cap.
@@ -104,7 +104,7 @@ class _Simulation:
                   self.dropoff_location, "Dropoff")
         self.cycle_used += C.DROPOFF_DURATION_HOURS
         self.stops.append(Stop("dropoff", self.dropoff_location, None, None, start,
-                               C.DROPOFF_DURATION_HOURS))
+                               C.DROPOFF_DURATION_HOURS, mile_marker=self.route.total_miles))
 
     # --- driving loop ------------------------------------------------------
     def _drive(self):
@@ -164,14 +164,16 @@ class _Simulation:
         start = self.clock
         self._add(DutyStatus.ON_DUTY_NOT_DRIVING, C.FUEL_DURATION_HOURS, note="Fueling stop")
         self.cycle_used += C.FUEL_DURATION_HOURS
-        self.stops.append(Stop("fuel", None, None, None, start, C.FUEL_DURATION_HOURS))
+        self.stops.append(Stop("fuel", None, None, None, start, C.FUEL_DURATION_HOURS,
+                               mile_marker=self.miles_done))
         self.next_fuel_mile += C.FUEL_INTERVAL_MILES
 
     def _rest(self):
         # Rule 4: 10 consecutive hours of sleeper berth; resets the day's clocks.
         start = self.clock
         self._add(DutyStatus.SLEEPER_BERTH, C.REST_DURATION_HOURS, note="10-hour rest")
-        self.stops.append(Stop("rest", None, None, None, start, C.REST_DURATION_HOURS))
+        self.stops.append(Stop("rest", None, None, None, start, C.REST_DURATION_HOURS,
+                               mile_marker=self.miles_done))
         self.driving_today = 0.0
         self.drive_since_break = 0.0
         self.window_start = None
