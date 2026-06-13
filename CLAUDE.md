@@ -24,6 +24,37 @@ spotter/
 
 Subprojects also have their own `Agents.md` / `CLAUDE.md` with package-specific details.
 
+## Application Architecture
+
+The app is fully implemented. Design specs and implementation plans live in
+`docs/superpowers/{specs,plans}/`.
+
+### Backend (`spotter-backend/src/app/`)
+
+- `hos/` — pure-Python HOS calculation engine (no Django imports): `engine.plan_trip`
+  runs the duty-status simulation; `daysplit` slices it into per-day log sheets summing
+  to 24h. All 7 PRD rule suites live in `tests/hos/`.
+- `routing/` — `RouteProvider` interface + `ORSRouteProvider` (OpenRouteService,
+  `driving-hgv`); `factory.get_route_provider()` returns `None` when `ORS_API_KEY` is
+  unset (the endpoint then returns 503).
+- `geocoding/` — `ReverseGeocoder` interface + Nominatim adapter for naming fuel/rest
+  stops.
+- `api/` — `POST /api/trip/plan`: validate → fetch route → run the engine → place +
+  reverse-geocode stops → return the PRD JSON contract. External services sit behind
+  interfaces, so the test suite (`uv run --extra dev pytest`) is fully offline.
+- `ORS_API_KEY` (OpenRouteService) is required for live routing; without it the endpoint
+  returns 503. See `spotter-backend/.env.example`.
+
+### Frontend (`spotter-frontend/src/`)
+
+- `routes/home.tsx` — the trip-planner page: Leaflet map with step-by-step pin placement,
+  Nominatim geocoding (`lib/geocode.ts`), cycle-hours input, and the Calculate mutation.
+- `components/map/` — `trip-map.tsx` (placement + route polyline + colored stop pins),
+  `pin-icons.ts`.
+- `components/logs/` — SVG ELD log sheets (`log-grid.tsx` + pure `lib/log-grid.ts`).
+- `store/trip-store.ts` — Zustand pin-placement state machine; `lib/api.ts` — typed client
+  for `POST /api/trip/plan` (`VITE_API_BASE_URL`).
+
 ## Tech Stack
 
 ### Frontend (`spotter-frontend/`)
