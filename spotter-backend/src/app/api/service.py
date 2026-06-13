@@ -8,8 +8,6 @@ from app.hos.daysplit import build_day_logs
 from app.hos.engine import plan_trip
 from app.hos.models import RouteInput
 
-_NAMED_NOTES = {"Fueling stop", "10-hour rest"}
-
 
 def build_trip_plan(data: dict, route, geocoder, start_dt: datetime) -> dict:
     """Run the HOS engine over a fetched route, place + name stops, serialize.
@@ -45,7 +43,7 @@ def build_trip_plan(data: dict, route, geocoder, start_dt: datetime) -> dict:
     # Inject geocoded names onto the matching fuel/rest entries, then rebuild the
     # per-day logs so remarks carry real place names.
     for entry in plan.entries:
-        if entry.note in _NAMED_NOTES and entry.start in name_by_entry_start:
+        if entry.start in name_by_entry_start:
             entry.location = name_by_entry_start[entry.start]
     logs = build_day_logs(plan.entries, start_dt)
 

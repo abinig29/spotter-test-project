@@ -1,8 +1,17 @@
 """HTTP endpoints."""
 
+from datetime import datetime, time
+
 from django.http import JsonResponse
+from rest_framework import status as http
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
+import app.geocoding.factory as geo_factory
+import app.routing.factory as route_factory
+from app.api.serializers import TripPlanRequestSerializer
+from app.api.service import build_trip_plan
+from app.routing.base import RouteNotFound, RouteResult, RouteServiceError
 
 
 def root(request):
@@ -16,17 +25,6 @@ def health(request):
 @api_view(["GET"])
 def api_status(request):
     return Response({"status": "ok", "framework": "django-rest-framework"})
-
-
-from datetime import datetime, time
-
-from rest_framework import status as http
-
-import app.geocoding.factory as geo_factory
-import app.routing.factory as route_factory
-from app.api.serializers import TripPlanRequestSerializer
-from app.api.service import build_trip_plan
-from app.routing.base import RouteNotFound, RouteResult, RouteServiceError
 
 
 @api_view(["POST"])

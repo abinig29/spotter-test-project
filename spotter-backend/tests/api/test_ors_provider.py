@@ -46,3 +46,11 @@ def test_transport_error_raises_service_error():
     provider = _provider(handler)
     with pytest.raises(RouteServiceError):
         provider.get_route([(0, 0), (0, 0), (0, 0)])
+
+
+def test_empty_geometry_raises_service_error():
+    body = {"features": [{"properties": {"summary": {"distance": 1000.0, "duration": 600.0}},
+                          "geometry": {"coordinates": []}}]}
+    provider = _provider(lambda req: httpx.Response(200, json=body))
+    with pytest.raises(RouteServiceError):
+        provider.get_route([(0, 0), (0, 0), (0, 0)])

@@ -45,6 +45,8 @@ class ORSRouteProvider(RouteProvider):
             geometry = feature["geometry"]["coordinates"]  # [[lng, lat], ...]
         except (KeyError, IndexError) as exc:
             raise RouteServiceError("Unexpected ORS response") from exc
+        if not geometry:
+            raise RouteServiceError("Empty route geometry")
         coordinates = [[lat, lng] for lng, lat in geometry]
         return RouteResult(
             total_miles=distance_m / METERS_PER_MILE,

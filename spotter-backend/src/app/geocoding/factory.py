@@ -1,5 +1,10 @@
 from app.geocoding.nominatim import NominatimGeocoder
 
+_geocoder = None
+
 
 def get_reverse_geocoder():
-    return NominatimGeocoder()
+    global _geocoder
+    if _geocoder is None:
+        _geocoder = NominatimGeocoder()
+    return _geocoder
