@@ -127,6 +127,11 @@
   }
 }
 
+/* The document title is hidden on screen and only shown in the printed PDF. */
+.print-only {
+  display: none;
+}
+
 /* Faithful ELD log sheets print cleanly, one per page. */
 @media print {
   body {
@@ -135,6 +140,10 @@
   /* biome-ignore lint/complexity/noImportantStyles: must force-hide controls when printing */
   .no-print {
     display: none !important;
+  }
+  /* Source order beats the screen rule above, so no !important needed here. */
+  .print-only {
+    display: block;
   }
   .log-sheet {
     break-inside: avoid;

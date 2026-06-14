@@ -18,7 +18,7 @@ export function TripSummary({ plan }: { plan: TripPlanResponse }) {
   const restStops = plan.route.stops.filter((s) => s.type === "rest").length;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b bg-card px-4 py-3 sm:px-6">
+    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b bg-card px-4 py-3 sm:px-6">
       <Metric
         label="Distance"
         value={`${plan.route.total_miles.toLocaleString()} mi`}

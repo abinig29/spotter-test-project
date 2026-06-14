@@ -1,7 +1,12 @@
 import "leaflet/dist/leaflet.css";
 
-import type { Marker as LeafletMarker } from "leaflet";
-import { useEffect } from "react";
+import type {
+  LatLngBoundsExpression,
+  Map as LeafletMap,
+  Marker as LeafletMarker,
+} from "leaflet";
+import { LocateFixed } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import {
   MapContainer,
   Marker,
@@ -133,91 +138,126 @@ export function TripMap({
   candidate,
   onCandidateDrag,
 }: TripMapProps) {
-  return (
-    <MapContainer
-      center={US_CENTER}
-      zoom={4}
-      className="h-full w-full bg-muted [&_.leaflet-control-attribution]:bg-card/80 [&_.leaflet-control-attribution]:text-[10px] [&_.leaflet-control-attribution]:text-muted-foreground [&_.spotter-pin]:drop-shadow-[0_2px_3px_rgba(0,0,0,0.35)]"
-      style={{ cursor: interactive ? "crosshair" : "grab" }}
-      zoomControl
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {interactive && <ClickHandler onPick={onPick} />}
-      <RecenterOnFocus focus={focus} />
+  const [map, setMap] = useState<LeafletMap | null>(null);
 
-      {!route &&
-        pins.map((pin) => (
+  // Bounds to snap back to: the full route, or any placed/candidate pins.
+  const recenterBounds: LatLngBoundsExpression | null =
+    route && route.coordinates.length > 0
+      ? route.coordinates
+      : (() => {
+          const points: [number, number][] = pins.map((p) => [
+            p.location.lat,
+            p.location.lng,
+          ]);
+          if (candidate) points.push([candidate.lat, candidate.lng]);
+          return points.length > 0 ? points : null;
+        })();
+
+  const recenter = useCallback(() => {
+    if (!map || !recenterBounds) return;
+    map.fitBounds(recenterBounds, { padding: [40, 40], maxZoom: 14 });
+  }, [map, recenterBounds]);
+
+  return (
+    <div className="relative h-full w-full">
+      <MapContainer
+        ref={setMap}
+        center={US_CENTER}
+        zoom={4}
+        className="h-full w-full bg-muted [&_.leaflet-control-attribution]:bg-card/80 [&_.leaflet-control-attribution]:text-[10px] [&_.leaflet-control-attribution]:text-muted-foreground [&_.spotter-pin]:drop-shadow-[0_2px_3px_rgba(0,0,0,0.35)]"
+        style={{ cursor: interactive ? "crosshair" : "grab" }}
+        zoomControl
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {interactive && <ClickHandler onPick={onPick} />}
+        <RecenterOnFocus focus={focus} />
+
+        {!route &&
+          pins.map((pin) => (
+            <Marker
+              key={pin.type}
+              position={[pin.location.lat, pin.location.lng]}
+              icon={pinIcon(pin.type)}
+            >
+              <Tooltip direction="top" offset={[0, -30]}>
+                <span className="font-medium">{pin.label}:</span>{" "}
+                {pin.location.address}
+              </Tooltip>
+            </Marker>
+          ))}
+
+        {!route && candidate && (
           <Marker
-            key={pin.type}
-            position={[pin.location.lat, pin.location.lng]}
-            icon={pinIcon(pin.type)}
+            position={[candidate.lat, candidate.lng]}
+            icon={pinIcon(candidate.type)}
+            draggable
+            eventHandlers={{
+              dragend: (e) => {
+                const { lat, lng } = (e.target as LeafletMarker).getLatLng();
+                onCandidateDrag?.(lat, lng);
+              },
+            }}
           >
             <Tooltip direction="top" offset={[0, -30]}>
-              <span className="font-medium">{pin.label}:</span>{" "}
-              {pin.location.address}
+              Drag to fine-tune, then confirm
             </Tooltip>
           </Marker>
-        ))}
+        )}
 
-      {!route && candidate && (
-        <Marker
-          position={[candidate.lat, candidate.lng]}
-          icon={pinIcon(candidate.type)}
-          draggable
-          eventHandlers={{
-            dragend: (e) => {
-              const { lat, lng } = (e.target as LeafletMarker).getLatLng();
-              onCandidateDrag?.(lat, lng);
-            },
-          }}
-        >
-          <Tooltip direction="top" offset={[0, -30]}>
-            Drag to fine-tune, then confirm
-          </Tooltip>
-        </Marker>
-      )}
-
-      {route && (
-        <>
-          <Polyline
-            positions={route.coordinates}
-            pathOptions={{ color: "#2563eb", weight: 4, opacity: 0.85 }}
-          />
-          {pins
-            .filter((pin) => pin.type === "current")
-            .map((pin) => (
+        {route && (
+          <>
+            <Polyline
+              positions={route.coordinates}
+              pathOptions={{ color: "#2563eb", weight: 4, opacity: 0.85 }}
+            />
+            {pins
+              .filter((pin) => pin.type === "current")
+              .map((pin) => (
+                <Marker
+                  key="current"
+                  position={[pin.location.lat, pin.location.lng]}
+                  icon={pinIcon("current")}
+                >
+                  <Popup>
+                    <StopPopup type="current" location={pin.location.address} />
+                  </Popup>
+                </Marker>
+              ))}
+            {route.stops.map((stop) => (
               <Marker
-                key="current"
-                position={[pin.location.lat, pin.location.lng]}
-                icon={pinIcon("current")}
+                key={`${stop.type}-${stop.lat}-${stop.lng}-${stop.arrival}`}
+                position={[stop.lat, stop.lng]}
+                icon={pinIcon(stop.type)}
               >
                 <Popup>
-                  <StopPopup type="current" location={pin.location.address} />
+                  <StopPopup
+                    type={stop.type}
+                    location={stop.location}
+                    arrival={stop.arrival}
+                    durationHours={stop.duration_hours}
+                  />
                 </Popup>
               </Marker>
             ))}
-          {route.stops.map((stop) => (
-            <Marker
-              key={`${stop.type}-${stop.lat}-${stop.lng}-${stop.arrival}`}
-              position={[stop.lat, stop.lng]}
-              icon={pinIcon(stop.type)}
-            >
-              <Popup>
-                <StopPopup
-                  type={stop.type}
-                  location={stop.location}
-                  arrival={stop.arrival}
-                  durationHours={stop.duration_hours}
-                />
-              </Popup>
-            </Marker>
-          ))}
-          <FitBounds coordinates={route.coordinates} />
-        </>
+            <FitBounds coordinates={route.coordinates} />
+          </>
+        )}
+      </MapContainer>
+
+      {recenterBounds && (
+        <button
+          type="button"
+          onClick={recenter}
+          aria-label="Recenter map"
+          title="Recenter map"
+          className="absolute top-3 right-3 z-1000 inline-flex size-9 items-center justify-center rounded-md border border-border bg-card/95 text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <LocateFixed className="size-4" />
+        </button>
       )}
-    </MapContainer>
+    </div>
   );
 }

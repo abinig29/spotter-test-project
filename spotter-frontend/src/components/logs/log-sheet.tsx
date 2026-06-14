@@ -1,4 +1,14 @@
+import { Maximize2 } from "lucide-react";
+import { type ReactNode, useState } from "react";
+
 import { LogGrid } from "@/components/logs/log-grid";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import type { DayLog } from "@/lib/api-types";
 import { STATUS_META, STATUS_ROWS } from "@/lib/log-grid";
 
@@ -44,12 +54,25 @@ function FormField({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function LogSheet({ log }: { log: DayLog }) {
+/**
+ * The full log-sheet body, shared by the inline card and its expanded dialog.
+ * `action` renders in the title band (expand button inline, omitted when
+ * already expanded). `minGridWidth` keeps the SVG legible on narrow screens.
+ */
+function LogSheetBody({
+  log,
+  action,
+  minGridWidth = 680,
+}: {
+  log: DayLog;
+  action?: ReactNode;
+  minGridWidth?: number;
+}) {
   const { weekday, long } = formatDate(log.date);
   const total = STATUS_ROWS.reduce((sum, s) => sum + (log.totals[s] ?? 0), 0);
 
   return (
-    <article className="log-sheet overflow-hidden rounded-md border border-foreground/15 bg-card">
+    <>
       {/* Title band */}
       <header className="flex flex-wrap items-center justify-between gap-3 border-foreground/15 border-b bg-secondary/40 px-4 py-3">
         <div className="flex items-center gap-2.5">
@@ -69,9 +92,12 @@ export function LogSheet({ log }: { log: DayLog }) {
             </p>
           </div>
         </div>
-        <p className="font-mono text-foreground text-sm tabular-nums">
-          {weekday}, {long}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="font-mono text-foreground text-sm tabular-nums">
+            {weekday}, {long}
+          </p>
+          {action}
+        </div>
       </header>
 
       {/* Official Driver's Daily Log header fields (placeholders) */}
@@ -84,7 +110,7 @@ export function LogSheet({ log }: { log: DayLog }) {
 
       {/* The grid */}
       <div className="overflow-x-auto px-4 py-4">
-        <div className="min-w-[680px]">
+        <div style={{ minWidth: minGridWidth }}>
           <LogGrid day={log} />
         </div>
       </div>
@@ -139,6 +165,42 @@ export function LogSheet({ log }: { log: DayLog }) {
           </ul>
         </div>
       )}
-    </article>
+    </>
+  );
+}
+
+export function LogSheet({ log }: { log: DayLog }) {
+  const [open, setOpen] = useState(false);
+  const { weekday, long } = formatDate(log.date);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <article className="log-sheet overflow-hidden rounded-md border border-foreground/15 bg-card">
+        <LogSheetBody
+          log={log}
+          action={
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="no-print text-muted-foreground"
+                aria-label={`Expand day ${log.day} log sheet`}
+              >
+                <Maximize2 className="size-3.5" />
+              </Button>
+            </DialogTrigger>
+          }
+        />
+      </article>
+
+      <DialogContent>
+        <DialogTitle className="sr-only">
+          Day {log.day} — Driver's Daily Log, {weekday}, {long}
+        </DialogTitle>
+        <div className="min-h-0 overflow-y-auto">
+          <LogSheetBody log={log} minGridWidth={760} />
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
