@@ -28,6 +28,27 @@ def test_parse_converts_units_and_flips_coords():
     assert result.coordinates[0] == [41.85, -87.65]  # [lng,lat] -> [lat,lng]
 
 
+def test_parse_extracts_pickup_leg_from_first_segment():
+    body = {"features": [{"properties": {
+        "summary": {"distance": 16093.4, "duration": 3600.0},
+        "segments": [
+            {"distance": 1609.34, "duration": 360.0},   # current -> pickup
+            {"distance": 14484.06, "duration": 3240.0},  # pickup -> dropoff
+        ]},
+        "geometry": {"coordinates": [[-87.65, 41.85], [-90.19, 38.62]]}}]}
+    provider = _provider(lambda req: httpx.Response(200, json=body))
+    result = provider.get_route([(41.85, -87.65), (38.62, -90.19), (36.16, -86.78)])
+    assert abs(result.pickup_miles - 1.0) < 0.01           # 1609.34 / 1609.34
+    assert abs(result.pickup_driving_hours - 0.1) < 1e-6   # 360 / 3600
+
+
+def test_parse_defaults_pickup_leg_to_zero_without_segments():
+    provider = _provider(lambda req: httpx.Response(200, json=SAMPLE))
+    result = provider.get_route([(41.85, -87.65), (38.62, -90.19), (36.16, -86.78)])
+    assert result.pickup_miles == 0.0
+    assert result.pickup_driving_hours == 0.0
+
+
 def test_404_raises_route_not_found():
     provider = _provider(lambda req: httpx.Response(404, json={"error": "no point"}))
     with pytest.raises(RouteNotFound):

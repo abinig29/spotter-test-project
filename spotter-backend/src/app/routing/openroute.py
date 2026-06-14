@@ -39,7 +39,8 @@ class ORSRouteProvider(RouteProvider):
     def _parse(data: dict) -> RouteResult:
         try:
             feature = data["features"][0]
-            summary = feature["properties"]["summary"]
+            props = feature["properties"]
+            summary = props["summary"]
             distance_m = summary["distance"]
             duration_s = summary["duration"]
             geometry = feature["geometry"]["coordinates"]  # [[lng, lat], ...]
@@ -48,8 +49,14 @@ class ORSRouteProvider(RouteProvider):
         if not geometry:
             raise RouteServiceError("Empty route geometry")
         coordinates = [[lat, lng] for lng, lat in geometry]
+        # The first segment is the current-location -> pickup leg (waypoints are
+        # current, pickup, dropoff). Absent segments (single-leg) -> 0.
+        segments = props.get("segments") or []
+        pickup_seg = segments[0] if segments else {}
         return RouteResult(
             total_miles=distance_m / METERS_PER_MILE,
             total_driving_hours=duration_s / 3600.0,
             coordinates=coordinates,
+            pickup_miles=pickup_seg.get("distance", 0.0) / METERS_PER_MILE,
+            pickup_driving_hours=pickup_seg.get("duration", 0.0) / 3600.0,
         )

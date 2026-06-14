@@ -54,6 +54,11 @@ class _Simulation:
 
         # Trip progress.
         self.drive_remaining = float(route.total_driving_hours)
+        # Hours left to drive once the current->pickup leg is done; the driving
+        # loop runs down to this target first, then the pickup block fires.
+        self.leg2_remaining = max(
+            float(route.total_driving_hours) - float(route.pickup_driving_hours), 0.0
+        )
         self.miles_done = 0.0
         self.next_fuel_mile = C.FUEL_INTERVAL_MILES
         self.mph = (
@@ -74,9 +79,13 @@ class _Simulation:
 
     # --- top-level flow ----------------------------------------------------
     def run(self):
-        self._pickup()
+        # Drive the current->pickup leg first (down to leg2_remaining), then the
+        # 1h pickup, then the pickup->dropoff leg, then the 1h dropoff.
+        self._drive(self.leg2_remaining)
         if not self.incomplete:
-            self._drive()
+            self._pickup()
+        if not self.incomplete:
+            self._drive(0.0)
         if not self.incomplete:
             self._dropoff()
         self._finalize_warning()
@@ -86,13 +95,16 @@ class _Simulation:
         if C.PICKUP_DURATION_HOURS > self._cap_remaining() + C.EPS:
             self.incomplete = True
             return
-        self.window_start = self.clock  # Rule 2/7: window starts at the first on-duty event.
+        # Rule 2/7: the 14h window starts at the first on-duty event. If the
+        # driver already drove to the pickup, the window is already open.
+        if self.window_start is None:
+            self.window_start = self.clock
         start = self.clock
         self._add(DutyStatus.ON_DUTY_NOT_DRIVING, C.PICKUP_DURATION_HOURS,
                   self.pickup_location, "Pickup")
         self.cycle_used += C.PICKUP_DURATION_HOURS
         self.stops.append(Stop("pickup", self.pickup_location, None, None, start,
-                               C.PICKUP_DURATION_HOURS, mile_marker=0.0))
+                               C.PICKUP_DURATION_HOURS, mile_marker=self.miles_done))
 
     def _dropoff(self):
         # Rule 5: don't schedule the on-duty block if it would exceed the 70h cap.
@@ -107,8 +119,9 @@ class _Simulation:
                                C.DROPOFF_DURATION_HOURS, mile_marker=self.route.total_miles))
 
     # --- driving loop ------------------------------------------------------
-    def _drive(self):
-        while self.drive_remaining > C.EPS:
+    def _drive(self, target_remaining: float = 0.0):
+        # Drive until drive_remaining reaches target_remaining (0 = drive it all).
+        while self.drive_remaining - target_remaining > C.EPS:
             if self.window_start is None:
                 self.window_start = self.clock
 
@@ -138,7 +151,7 @@ class _Simulation:
                 continue
 
             chunk = min(to_break, to_11, to_window, self._cap_remaining(), to_fuel,
-                        self.drive_remaining)
+                        self.drive_remaining - target_remaining)
             self._drive_chunk(chunk)
 
     def _hours_to_next_fuel(self) -> float:

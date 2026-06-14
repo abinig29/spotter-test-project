@@ -74,7 +74,7 @@ export function ResultsView({ plan, current, onReset }: ResultsViewProps) {
           aria-label="Daily log sheets"
           className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4"
         >
-          <div className="mb-3 flex items-baseline justify-between">
+          <div className="mb-3 flex items-baseline gap-4">
             <h2 className="font-semibold text-[11px] text-muted-foreground uppercase tracking-wider">
               Daily log sheets
             </h2>

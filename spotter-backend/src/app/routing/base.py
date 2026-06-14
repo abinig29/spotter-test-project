@@ -9,6 +9,8 @@ class RouteResult:
     total_miles: float
     total_driving_hours: float
     coordinates: list[list[float]]  # [[lat, lng], ...] full road polyline
+    pickup_miles: float = 0.0          # current -> pickup leg (first segment)
+    pickup_driving_hours: float = 0.0
 
 
 class RouteNotFound(Exception):

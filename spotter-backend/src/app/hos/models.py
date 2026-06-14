@@ -10,6 +10,11 @@ from app.hos.statuses import DutyStatus
 class RouteInput:
     total_miles: float
     total_driving_hours: float
+    # The current-location -> pickup leg, driven before the 1h pickup. The
+    # remainder (total - pickup) is the pickup -> dropoff leg. Defaults to 0,
+    # in which case pickup is effectively at the current location.
+    pickup_miles: float = 0.0
+    pickup_driving_hours: float = 0.0
 
 
 @dataclass

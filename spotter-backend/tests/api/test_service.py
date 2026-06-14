@@ -47,6 +47,17 @@ def test_response_has_route_logs_and_named_fuel_stop():
         assert abs(sum(day["totals"].values()) - 24.0) < 0.01
 
 
+def test_drives_to_pickup_before_pickup_block():
+    # Route with a real current->pickup leg: day 1 should start by driving, not
+    # by the on-duty pickup block.
+    route = RouteResult(700.0, 12.0, [[41.85, -87.65], [36.16, -86.78]],
+                        pickup_miles=50.0, pickup_driving_hours=1.0)
+    resp = build_trip_plan(VALID, route, FakeGeocoder(), START)
+    entries = [e for day in resp["logs"] for e in day["entries"]]
+    first_work = next(e for e in entries if e["status"] in ("driving", "on_duty_not_driving"))
+    assert first_work["status"] == "driving"
+
+
 def test_fuel_stop_name_appears_in_remarks():
     resp = build_trip_plan(VALID, _route(), FakeGeocoder(name="Near Cairo, IL"), START)
     all_remarks = [r for day in resp["logs"] for r in day["remarks"]]

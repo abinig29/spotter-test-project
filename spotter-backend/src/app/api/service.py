@@ -19,7 +19,12 @@ def build_trip_plan(data: dict, route, geocoder, start_dt: datetime) -> dict:
     dropoff = data["dropoff_location"]
 
     plan = plan_trip(
-        RouteInput(route.total_miles, route.total_driving_hours),
+        RouteInput(
+            route.total_miles,
+            route.total_driving_hours,
+            pickup_miles=route.pickup_miles,
+            pickup_driving_hours=route.pickup_driving_hours,
+        ),
         float(data["cycle_hours_used"]),
         start_dt=start_dt,
         pickup_location=pickup.get("address") or "Pickup",
