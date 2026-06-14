@@ -1,4 +1,4 @@
-import { Check, Loader2, LocateFixed, Pencil } from "lucide-react";
+import { Check, Loader2, LocateFixed, Pencil, RotateCcw } from "lucide-react";
 
 import { PIN_COLORS } from "@/components/map/pin-icons";
 import { Button } from "@/components/ui/button";
@@ -57,30 +57,33 @@ function StepNode({
     <div className="flex flex-col items-center self-stretch">
       {state === "done" ? (
         <span
-          className="flex size-7 shrink-0 items-center justify-center rounded-full text-white"
+          className="flex size-6 shrink-0 items-center justify-center rounded-full text-white"
           style={{ backgroundColor: STEPPER }}
         >
-          <Check className="size-4" />
+          <Check className="size-3.5" />
         </span>
       ) : state === "active" ? (
+        /* Donut style: outer ring filled, inner cutout reveals bg, number on top */
         <span
-          className="flex size-7 shrink-0 items-center justify-center rounded-full border-2 bg-background font-semibold text-xs"
-          style={{
-            borderColor: STEPPER,
-            color: STEPPER,
-            boxShadow: `0 0 0 4px ${STEPPER}1f`,
-          }}
+          className="relative flex size-6 shrink-0 items-center justify-center rounded-full"
+          style={{ backgroundColor: STEPPER }}
         >
-          {n}
+          <span className="absolute inset-[3px] rounded-full bg-background" />
+          <span
+            className="relative font-semibold text-[10px]"
+            style={{ color: STEPPER }}
+          >
+            {n}
+          </span>
         </span>
       ) : (
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-background font-medium text-muted-foreground text-xs">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-border bg-background font-medium text-muted-foreground text-[10px]">
           {n}
         </span>
       )}
       {!last && (
         <span
-          className="my-1 w-0.5 flex-1 rounded-full"
+          className="my-1 w-px flex-1"
           style={{
             backgroundColor: state === "done" ? STEPPER : "var(--border)",
           }}
@@ -120,13 +123,29 @@ export function WizardPanel({
   const placedCount = PIN_ORDER.filter((k) => store[k]).length;
   const isComplete = store.step === "complete";
   const cycleInvalid = store.cycleHoursUsed < 0 || store.cycleHoursUsed > 70;
+  const stepNumber = isComplete ? 4 : placedCount + 1;
 
   return (
     <>
       {/* Top bar */}
-      <header className="flex shrink-0 items-center gap-2 border-b bg-card px-4 py-2.5">
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b bg-card px-4 py-2.5">
         <span className="font-semibold text-sm tracking-tight">Spotter</span>
-        <span className="text-muted-foreground text-xs">ELD Trip Planner</span>
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+            {stepNumber}
+            <span className="mx-0.5 opacity-40">/</span>4
+          </span>
+          {placedCount > 0 && (
+            <button
+              type="button"
+              onClick={onStartOver}
+              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+            >
+              <RotateCcw className="size-3" />
+              Start over
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Guided form */}
@@ -321,16 +340,6 @@ export function WizardPanel({
               </div>
             </li>
           </ol>
-
-          {placedCount > 0 && (
-            <button
-              type="button"
-              onClick={onStartOver}
-              className="mt-4 w-full text-center text-[11px] text-muted-foreground underline-offset-2 hover:underline"
-            >
-              Start over
-            </button>
-          )}
         </div>
       </div>
     </>
