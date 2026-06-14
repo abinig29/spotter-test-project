@@ -5,7 +5,7 @@ const STOP_LABEL: Record<PinType, string> = {
   current: "Start",
   pickup: "Pickup",
   dropoff: "Dropoff",
-  rest: "10h rest",
+  rest: "10hr Rest",
   fuel: "Fuel",
 };
 

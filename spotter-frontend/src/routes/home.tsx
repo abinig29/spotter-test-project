@@ -66,6 +66,36 @@ export default function Home() {
     }
   }
 
+  // One-tap GPS: drop a candidate at the driver's real position.
+  function handleUseMyLocation() {
+    if (!("geolocation" in navigator)) {
+      toast.error("Location isn't available on this device.");
+      return;
+    }
+    setResolving(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setFocus([latitude, longitude]);
+        try {
+          const address = await reverseGeocode(latitude, longitude);
+          setCandidate({ lat: latitude, lng: longitude, address });
+        } finally {
+          setResolving(false);
+        }
+      },
+      (err) => {
+        setResolving(false);
+        toast.error(
+          err.code === err.PERMISSION_DENIED
+            ? "Location permission denied — search or click the map instead."
+            : "Couldn't get your location — search or click the map instead.",
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
   // Searching a place drops a candidate and recenters the map there.
   function handleSearchSelect(result: AddressResult) {
     setFocus([result.lat, result.lng]);
@@ -154,6 +184,7 @@ export default function Home() {
           candidate={candidate}
           onCalculate={handleCalculate}
           onSearchSelect={handleSearchSelect}
+          onUseMyLocation={handleUseMyLocation}
           onConfirm={handleConfirm}
           onChangePin={handleChangePin}
           onStartOver={handleStartOver}

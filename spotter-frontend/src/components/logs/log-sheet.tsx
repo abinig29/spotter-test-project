@@ -27,6 +27,23 @@ function formatDate(iso: string): { weekday: string; long: string } {
   return { weekday, long: `${month} ${d}, ${y}` };
 }
 
+/**
+ * A single field from the official Driver's Daily Log header. The app is
+ * stateless and carries no carrier/vehicle data, so values are placeholders.
+ */
+function FormField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[9px] text-muted-foreground uppercase tracking-wider">
+        {label}
+      </dt>
+      <dd className="mt-0.5 truncate border-foreground/15 border-b border-dotted pb-1 text-foreground/70 text-xs">
+        {value}
+      </dd>
+    </div>
+  );
+}
+
 export function LogSheet({ log }: { log: DayLog }) {
   const { weekday, long } = formatDate(log.date);
   const total = STATUS_ROWS.reduce((sum, s) => sum + (log.totals[s] ?? 0), 0);
@@ -56,6 +73,14 @@ export function LogSheet({ log }: { log: DayLog }) {
           {weekday}, {long}
         </p>
       </header>
+
+      {/* Official Driver's Daily Log header fields (placeholders) */}
+      <dl className="grid grid-cols-2 gap-x-5 gap-y-3 border-foreground/15 border-b px-4 py-3 sm:grid-cols-4">
+        <FormField label="Carrier" value="N/A" />
+        <FormField label="Main office address" value="N/A" />
+        <FormField label="Truck / Trailer no." value="N/A" />
+        <FormField label="Driver signature" value="N/A" />
+      </dl>
 
       {/* The grid */}
       <div className="overflow-x-auto px-4 py-4">

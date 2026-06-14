@@ -1,4 +1,4 @@
-import { Check, Loader2, Pencil } from "lucide-react";
+import { Check, Loader2, LocateFixed, Pencil } from "lucide-react";
 
 import { PIN_COLORS } from "@/components/map/pin-icons";
 import { Button } from "@/components/ui/button";
@@ -97,6 +97,7 @@ interface WizardPanelProps {
   candidate: TripLocation | null;
   onCalculate: () => void;
   onSearchSelect: (result: AddressResult) => void;
+  onUseMyLocation: () => void;
   onConfirm: () => void;
   onChangePin: (key: PinKey) => void;
   onStartOver: () => void;
@@ -109,6 +110,7 @@ export function WizardPanel({
   candidate,
   onCalculate,
   onSearchSelect,
+  onUseMyLocation,
   onConfirm,
   onChangePin,
   onStartOver,
@@ -203,16 +205,29 @@ export function WizardPanel({
                           accent={meta.color}
                           placeholder={`Search ${meta.label.toLowerCase()}…`}
                         />
-                        <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                          {resolving ? (
-                            <>
-                              <Loader2 className="size-3 animate-spin motion-reduce:hidden" />
-                              Updating address…
-                            </>
-                          ) : (
-                            "Search, click the map, or drag the pin to fine-tune."
+                        <div className="mt-1.5 flex items-center justify-between gap-2">
+                          <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                            {resolving ? (
+                              <>
+                                <Loader2 className="size-3 animate-spin motion-reduce:hidden" />
+                                Updating address…
+                              </>
+                            ) : (
+                              "Search, click the map, or drag the pin."
+                            )}
+                          </p>
+                          {key === "current" && (
+                            <button
+                              type="button"
+                              onClick={onUseMyLocation}
+                              disabled={resolving}
+                              className="inline-flex shrink-0 items-center gap-1 font-medium text-[11px] text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                            >
+                              <LocateFixed className="size-3" />
+                              Use my location
+                            </button>
                           )}
-                        </p>
+                        </div>
                         <Button
                           size="sm"
                           className="mt-2 w-full"

@@ -13,8 +13,49 @@ import {
   useMapEvents,
 } from "react-leaflet";
 
-import { type PinType, pinIcon } from "@/components/map/pin-icons";
+import { PIN_COLORS, type PinType, pinIcon } from "@/components/map/pin-icons";
 import type { Stop, TripLocation } from "@/lib/api-types";
+
+/** Human-readable pin labels for map popups (per PRD route-map spec). */
+const STOP_LABEL: Record<PinType, string> = {
+  current: "Start",
+  pickup: "Pickup",
+  dropoff: "Dropoff",
+  rest: "10hr Rest",
+  fuel: "Fuel",
+};
+
+/** Popup body shared by every route pin: type, location, arrival + duration. */
+function StopPopup({
+  type,
+  location,
+  arrival,
+  durationHours,
+}: {
+  type: PinType;
+  location: string;
+  arrival?: string;
+  durationHours?: number;
+}) {
+  return (
+    <div className="text-xs leading-snug">
+      <p className="flex items-center gap-1.5 font-semibold">
+        <span
+          className="size-2 shrink-0 rounded-full"
+          style={{ backgroundColor: PIN_COLORS[type] }}
+        />
+        {STOP_LABEL[type]}
+      </p>
+      <p className="mt-0.5 text-foreground">{location}</p>
+      {arrival && (
+        <p className="mt-0.5 font-mono text-muted-foreground tabular-nums">
+          Arrive {arrival}
+          {durationHours ? ` · ${durationHours}h stop` : ""}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export interface CandidateMarker {
   lat: number;
@@ -153,10 +194,9 @@ export function TripMap({
                 position={[pin.location.lat, pin.location.lng]}
                 icon={pinIcon("current")}
               >
-                <Tooltip direction="top" offset={[0, -30]}>
-                  <span className="font-medium">Current:</span>{" "}
-                  {pin.location.address}
-                </Tooltip>
+                <Popup>
+                  <StopPopup type="current" location={pin.location.address} />
+                </Popup>
               </Marker>
             ))}
           {route.stops.map((stop) => (
@@ -166,13 +206,12 @@ export function TripMap({
               icon={pinIcon(stop.type)}
             >
               <Popup>
-                <div className="text-xs">
-                  <p className="font-semibold capitalize">{stop.type}</p>
-                  <p>{stop.location}</p>
-                  <p>
-                    Arrival {stop.arrival} · {stop.duration_hours}h
-                  </p>
-                </div>
+                <StopPopup
+                  type={stop.type}
+                  location={stop.location}
+                  arrival={stop.arrival}
+                  durationHours={stop.duration_hours}
+                />
               </Popup>
             </Marker>
           ))}
