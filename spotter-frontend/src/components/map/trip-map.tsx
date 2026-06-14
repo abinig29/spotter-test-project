@@ -6,7 +6,7 @@ import type {
   Marker as LeafletMarker,
 } from "leaflet";
 import { LocateFixed } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MapContainer,
   Marker,
@@ -36,26 +36,34 @@ function StopPopup({
   location,
   arrival,
   durationHours,
+  day,
 }: {
   type: PinType;
   location: string;
   arrival?: string;
   durationHours?: number;
+  day?: number;
 }) {
+  const parts = [
+    day ? `Day ${day}` : null,
+    arrival ? arrival : null,
+    durationHours ? `${durationHours}h` : null,
+  ].filter(Boolean);
+
   return (
-    <div className="text-xs leading-snug">
-      <p className="flex items-center gap-1.5 font-semibold">
-        <span
-          className="size-2 shrink-0 rounded-full"
-          style={{ backgroundColor: PIN_COLORS[type] }}
-        />
+    <div className="min-w-[130px] max-w-[190px] px-2.5 py-2">
+      <p
+        className="text-[10px] font-semibold uppercase tracking-wider"
+        style={{ color: PIN_COLORS[type] }}
+      >
         {STOP_LABEL[type]}
       </p>
-      <p className="mt-0.5 text-foreground">{location}</p>
-      {arrival && (
-        <p className="mt-0.5 font-mono text-muted-foreground tabular-nums">
-          Arrive {arrival}
-          {durationHours ? ` · ${durationHours}h stop` : ""}
+      <p className="text-[12px] font-medium leading-snug text-foreground">
+        {location}
+      </p>
+      {parts.length > 0 && (
+        <p className="font-mono text-[10px] text-muted-foreground tabular-nums">
+          {parts.join(" · ")}
         </p>
       )}
     </div>
@@ -81,6 +89,20 @@ export interface MapRoute {
   stops: Stop[];
 }
 
+/** A stop the user selected elsewhere (e.g. the route-stops list) to focus. */
+export interface FocusStop {
+  lat: number;
+  lng: number;
+  key: string;
+}
+
+export const CURRENT_KEY = "current";
+
+/** Stable marker key shared by the map markers and the route-stops list. */
+export function stopKey(stop: Stop): string {
+  return `${stop.type}-${stop.lat}-${stop.lng}-${stop.arrival}`;
+}
+
 interface TripMapProps {
   pins: MapPin[];
   interactive: boolean;
@@ -91,6 +113,8 @@ interface TripMapProps {
   /** A draggable, not-yet-confirmed location for the active step. */
   candidate?: CandidateMarker | null;
   onCandidateDrag?: (lat: number, lng: number) => void;
+  /** When set/changed, fly to this stop and open its popup. */
+  focusStop?: FocusStop | null;
 }
 
 function RecenterOnFocus({ focus }: { focus?: [number, number] | null }) {
@@ -137,8 +161,19 @@ export function TripMap({
   focus,
   candidate,
   onCandidateDrag,
+  focusStop,
 }: TripMapProps) {
   const [map, setMap] = useState<LeafletMap | null>(null);
+  const markerRefs = useRef<Record<string, LeafletMarker | null>>({});
+
+  // Selecting a stop in the route-stops list flies to it and opens its popup.
+  useEffect(() => {
+    if (!map || !focusStop) return;
+    map.flyTo([focusStop.lat, focusStop.lng], Math.max(map.getZoom(), 12), {
+      duration: 0.6,
+    });
+    markerRefs.current[focusStop.key]?.openPopup();
+  }, [map, focusStop]);
 
   // Bounds to snap back to: the full route, or any placed/candidate pins.
   const recenterBounds: LatLngBoundsExpression | null =
@@ -164,7 +199,7 @@ export function TripMap({
         ref={setMap}
         center={US_CENTER}
         zoom={4}
-        className="h-full w-full bg-muted [&_.leaflet-control-attribution]:bg-card/80 [&_.leaflet-control-attribution]:text-[10px] [&_.leaflet-control-attribution]:text-muted-foreground [&_.spotter-pin]:drop-shadow-[0_2px_3px_rgba(0,0,0,0.35)]"
+        className="h-full w-full bg-muted [&_.leaflet-control-attribution]:bg-card/80 [&_.leaflet-control-attribution]:text-[10px] [&_.leaflet-control-attribution]:text-muted-foreground [&_.spotter-pin]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.22)]"
         style={{ cursor: interactive ? "crosshair" : "grab" }}
         zoomControl
       >
@@ -217,7 +252,10 @@ export function TripMap({
               .filter((pin) => pin.type === "current")
               .map((pin) => (
                 <Marker
-                  key="current"
+                  key={CURRENT_KEY}
+                  ref={(m) => {
+                    markerRefs.current[CURRENT_KEY] = m;
+                  }}
                   position={[pin.location.lat, pin.location.lng]}
                   icon={pinIcon("current")}
                 >
@@ -226,36 +264,44 @@ export function TripMap({
                   </Popup>
                 </Marker>
               ))}
-            {route.stops.map((stop) => (
-              <Marker
-                key={`${stop.type}-${stop.lat}-${stop.lng}-${stop.arrival}`}
-                position={[stop.lat, stop.lng]}
-                icon={pinIcon(stop.type)}
-              >
-                <Popup>
-                  <StopPopup
-                    type={stop.type}
-                    location={stop.location}
-                    arrival={stop.arrival}
-                    durationHours={stop.duration_hours}
-                  />
-                </Popup>
-              </Marker>
-            ))}
+            {route.stops.map((stop) => {
+              const key = stopKey(stop);
+              return (
+                <Marker
+                  key={key}
+                  ref={(m) => {
+                    markerRefs.current[key] = m;
+                  }}
+                  position={[stop.lat, stop.lng]}
+                  icon={pinIcon(stop.type)}
+                >
+                  <Popup>
+                    <StopPopup
+                      type={stop.type}
+                      location={stop.location}
+                      arrival={stop.arrival}
+                      durationHours={stop.duration_hours}
+                      day={stop.day}
+                    />
+                  </Popup>
+                </Marker>
+              );
+            })}
             <FitBounds coordinates={route.coordinates} />
           </>
         )}
       </MapContainer>
 
+      {/* Sits directly under Leaflet's zoom +/- control (top-left). */}
       {recenterBounds && (
         <button
           type="button"
           onClick={recenter}
           aria-label="Recenter map"
           title="Recenter map"
-          className="absolute top-3 right-3 z-1000 inline-flex size-9 items-center justify-center rounded-md border border-border bg-card/95 text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="absolute top-[80px] left-[10px] z-1000 inline-flex size-[30px] items-center justify-center rounded-[4px] border-2 border-black/20 bg-white text-[#333] transition-colors hover:bg-[#f4f4f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <LocateFixed className="size-4" />
+          <LocateFixed className="size-[15px]" />
         </button>
       )}
     </div>

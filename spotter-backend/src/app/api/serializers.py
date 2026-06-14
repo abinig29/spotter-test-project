@@ -42,12 +42,13 @@ def serialize_day(day: DayLog) -> dict:
     }
 
 
-def serialize_stop(stop: Stop, location: str, lat: float, lng: float) -> dict:
+def serialize_stop(stop: Stop, location: str, lat: float, lng: float, day: int = 1) -> dict:
     return {
         "type": stop.type,
         "location": location,
         "lat": lat,
         "lng": lng,
+        "day": day,
         "arrival": stop.arrival.strftime("%H:%M"),
         "duration_hours": round(stop.duration_hours, 2),
     }

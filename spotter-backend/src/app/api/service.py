@@ -43,7 +43,10 @@ def build_trip_plan(data: dict, route, geocoder, start_dt: datetime) -> dict:
             lat, lng = (point or route.coordinates[0])
             name = geocoder.reverse(lat, lng)
             name_by_entry_start[stop.arrival] = name
-        response_stops.append(serialize_stop(stop, name, lat, lng))
+        # 1-based day index of the stop, relative to the trip's start date, so
+        # the frontend can disambiguate stops that share a clock time.
+        day = (stop.arrival.date() - start_dt.date()).days + 1
+        response_stops.append(serialize_stop(stop, name, lat, lng, day))
 
     # Inject geocoded names onto the matching fuel/rest entries, then rebuild the
     # per-day logs so remarks carry real place names.
@@ -60,5 +63,6 @@ def build_trip_plan(data: dict, route, geocoder, start_dt: datetime) -> dict:
             "stops": response_stops,
         },
         "cycle_hours_warning": plan.cycle_hours_warning,
+        "total_cycle_hours_used": round(plan.total_cycle_hours_used, 1),
         "logs": [serialize_day(d) for d in logs],
     }

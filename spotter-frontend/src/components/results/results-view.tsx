@@ -1,7 +1,18 @@
-import { AlertTriangle, Download, Plus } from "lucide-react";
+import {
+  AlertTriangle,
+  Download,
+  MousePointerClick,
+  Pencil,
+  Plus,
+} from "lucide-react";
+import { useState } from "react";
 
 import { LogSheet } from "@/components/logs/log-sheet";
-import { TripMap, type MapPin as TripPin } from "@/components/map/trip-map";
+import {
+  type FocusStop,
+  TripMap,
+  type MapPin as TripPin,
+} from "@/components/map/trip-map";
 import { StopsList } from "@/components/results/stops-list";
 import { TripSummary } from "@/components/results/trip-summary";
 import { Button } from "@/components/ui/button";
@@ -11,9 +22,17 @@ interface ResultsViewProps {
   plan: TripPlanResponse;
   current?: TripLocation;
   onReset: () => void;
+  onEdit: () => void;
 }
 
-export function ResultsView({ plan, current, onReset }: ResultsViewProps) {
+export function ResultsView({
+  plan,
+  current,
+  onReset,
+  onEdit,
+}: ResultsViewProps) {
+  const [focusStop, setFocusStop] = useState<FocusStop | null>(null);
+
   const pins: TripPin[] = current
     ? [{ type: "current", label: "Current", location: current }]
     : [];
@@ -42,7 +61,15 @@ export function ResultsView({ plan, current, onReset }: ResultsViewProps) {
             </span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Button variant="secondary" size="sm" onClick={() => window.print()}>
+            <Button variant="secondary" size="sm" onClick={onEdit}>
+              <Pencil className="size-3.5" />
+              Edit trip
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => window.print()}
+            >
               <Download className="size-3.5" />
               Download PDF
             </Button>
@@ -73,11 +100,22 @@ export function ResultsView({ plan, current, onReset }: ResultsViewProps) {
             aria-label="Stops"
             className="shrink-0 border-b bg-card px-4 py-3"
           >
-            <h2 className="mb-2.5 font-semibold text-[11px] text-muted-foreground uppercase tracking-wider">
-              Route stops
-            </h2>
+            <div className="mb-2.5 flex items-center gap-2">
+              <h2 className="font-semibold text-[11px] text-muted-foreground uppercase tracking-wider">
+                Route stops
+              </h2>
+              <span className="no-print flex items-center gap-1 text-[10px] text-muted-foreground/80">
+                <MousePointerClick className="size-3" />
+                Tap to locate on map
+              </span>
+            </div>
             <div className="relative">
-              <StopsList plan={plan} current={current} />
+              <StopsList
+                plan={plan}
+                current={current}
+                onSelect={setFocusStop}
+                activeKey={focusStop?.key}
+              />
               {/* Right-edge fade hints at horizontal scroll when stops overflow */}
               <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l from-card to-transparent" />
             </div>
@@ -112,6 +150,7 @@ export function ResultsView({ plan, current, onReset }: ResultsViewProps) {
           interactive={false}
           onPick={() => {}}
           route={plan.route}
+          focusStop={focusStop}
         />
       </aside>
     </main>

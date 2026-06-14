@@ -18,6 +18,8 @@ export interface Stop {
   location: string;
   lat: number;
   lng: number;
+  /** 1-based day index of the stop within the trip. */
+  day: number;
   arrival: string;
   duration_hours: number;
 }
@@ -47,6 +49,8 @@ export interface TripPlanResponse {
     stops: Stop[];
   };
   cycle_hours_warning: string | null;
+  /** Total on-duty hours used in the 70-hour cycle after this trip (0–70+). */
+  total_cycle_hours_used: number;
   logs: DayLog[];
 }
 

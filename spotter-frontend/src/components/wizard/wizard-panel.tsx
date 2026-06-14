@@ -282,6 +282,13 @@ export function WizardPanel({
                       </span>
                     </div>
 
+                    {(cycleInvalid ||
+                      !Number.isFinite(store.cycleHoursUsed)) && (
+                      <p className="mt-1.5 text-[11px] text-destructive">
+                        Enter a number between 0 and 70.
+                      </p>
+                    )}
+
                     {errorMessage && (
                       <p className="mt-3 rounded-md bg-destructive/10 px-2.5 py-1.5 text-[11px] text-destructive">
                         {errorMessage}

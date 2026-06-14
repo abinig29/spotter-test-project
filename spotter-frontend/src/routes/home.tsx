@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -161,9 +162,21 @@ export default function Home() {
     mutation.reset();
   }
 
+  // Return to the wizard with all pins + cycle hours intact, ready to tweak.
+  function handleEdit() {
+    setPlan(null);
+    setErrorMessage(null);
+    mutation.reset();
+  }
+
   if (plan) {
     return (
-      <ResultsView plan={plan} current={store.current} onReset={handleReset} />
+      <ResultsView
+        plan={plan}
+        current={store.current}
+        onReset={handleReset}
+        onEdit={handleEdit}
+      />
     );
   }
 
@@ -192,7 +205,7 @@ export default function Home() {
       </div>
 
       {/* Map */}
-      <aside className="order-1 h-[38vh] shrink-0 lg:order-2 lg:h-auto lg:w-1/2 lg:max-w-none">
+      <aside className="relative order-1 h-[38vh] shrink-0 lg:order-2 lg:h-auto lg:w-1/2 lg:max-w-none">
         <TripMap
           pins={pins}
           interactive={store.step !== "complete" && !resolving}
@@ -201,6 +214,15 @@ export default function Home() {
           candidate={candidateMarker}
           onCandidateDrag={handleCandidateDrag}
         />
+        {mutation.isPending && (
+          <div className="absolute inset-0 z-1100 flex flex-col items-center justify-center gap-2.5 bg-background/60 backdrop-blur-[1px]">
+            <Loader2 className="size-6 animate-spin text-primary motion-reduce:hidden" />
+            <p className="font-medium text-sm">Planning your trip…</p>
+            <p className="text-muted-foreground text-xs">
+              Routing and building your daily log sheets
+            </p>
+          </div>
+        )}
       </aside>
     </main>
   );

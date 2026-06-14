@@ -63,18 +63,24 @@ function LogSheetBody({
   log,
   action,
   minGridWidth = 680,
+  reserveCloseSpace = false,
 }: {
   log: DayLog;
   action?: ReactNode;
   minGridWidth?: number;
+  /** Pads the title band's end so the dialog close button can't overlap the date. */
+  reserveCloseSpace?: boolean;
 }) {
   const { weekday, long } = formatDate(log.date);
-  const total = STATUS_ROWS.reduce((sum, s) => sum + (log.totals[s] ?? 0), 0);
 
   return (
     <>
       {/* Title band */}
-      <header className="flex flex-wrap items-center justify-between gap-3 border-foreground/15 border-b bg-secondary/40 px-4 py-3">
+      <header
+        className={`flex flex-wrap items-center justify-between gap-3 border-foreground/15 border-b bg-secondary/40 px-4 py-3 ${
+          reserveCloseSpace ? "pr-12" : ""
+        }`}
+      >
         <div className="flex items-center gap-2.5">
           <span className="font-mono text-[11px] text-muted-foreground uppercase tracking-wider">
             Day {log.day}
@@ -84,11 +90,8 @@ function LogSheetBody({
             <h3 className="font-medium text-sm tracking-tight">
               Driver's Daily Log
             </h3>
-            <p className="text-[11px] text-muted-foreground">
-              24-hour record ·{" "}
-              <span className="font-mono tabular-nums">
-                {log.total_miles_today} mi
-              </span>
+            <p className="font-mono text-[11px] text-muted-foreground tabular-nums">
+              {log.total_miles_today} mi
             </p>
           </div>
         </div>
@@ -115,32 +118,22 @@ function LogSheetBody({
         </div>
       </div>
 
-      {/* Legend + total */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-1 pb-4">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-          {STATUS_ROWS.map((status) => {
-            const meta = STATUS_META[status];
-            return (
-              <span
-                key={status}
-                className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
-              >
-                <span
-                  className="size-2.5 rounded-[3px]"
-                  style={{ backgroundColor: meta.color }}
-                  aria-hidden="true"
-                />
-                {meta.short}
-                <span className="font-semibold text-foreground tabular-nums">
-                  {(log.totals[status] ?? 0).toFixed(1)}
-                </span>
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 pt-1 pb-4">
+        {STATUS_ROWS.map((status) => {
+          const meta = STATUS_META[status];
+          return (
+            <span
+              key={status}
+              className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
+            >
+              {meta.short}
+              <span className="font-semibold text-foreground tabular-nums">
+                {(log.totals[status] ?? 0).toFixed(1)}
               </span>
-            );
-          })}
-        </div>
-        <span className="font-semibold text-sm tabular-nums">
-          Total <span className="text-primary">{total.toFixed(1)}</span> hrs
-        </span>
+            </span>
+          );
+        })}
       </div>
 
       {/* Remarks */}
@@ -198,7 +191,7 @@ export function LogSheet({ log }: { log: DayLog }) {
           Day {log.day} — Driver's Daily Log, {weekday}, {long}
         </DialogTitle>
         <div className="min-h-0 overflow-y-auto">
-          <LogSheetBody log={log} minGridWidth={760} />
+          <LogSheetBody log={log} minGridWidth={760} reserveCloseSpace />
         </div>
       </DialogContent>
     </Dialog>
