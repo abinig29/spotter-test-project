@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DEBUG = os.getenv("DEBUG", "true").lower() == "true"
+DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
 ALLOWED_HOSTS = ["*"]
 ROOT_URLCONF = "app.urls"

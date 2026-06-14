@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: spotter-backend
+    runtime: python
+    pythonVersion: "3.11"
+    buildCommand: pip install uv && uv sync
+    startCommand: uv run gunicorn app.wsgi:application --bind 0.0.0.0:$PORT --workers 2
+    envVars:
+      - key: DEBUG
+        value: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ORS_API_KEY
+        sync: false
