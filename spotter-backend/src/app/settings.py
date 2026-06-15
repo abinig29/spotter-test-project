@@ -21,6 +21,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "app.visits.VisitNotifierMiddleware",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
