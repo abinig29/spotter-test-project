@@ -72,6 +72,11 @@ const SAN_FRANCISCO: TripLocation = {
   lng: -122.4194,
   address: "San Francisco, CA",
 };
+const CHARLOTTE: TripLocation = {
+  lat: 35.2271,
+  lng: -80.8431,
+  address: "Charlotte, NC",
+};
 
 // Nearby origin suburbs, so every scenario has a short current -> pickup leg
 // (~10-40 mi) rather than starting at the pickup itself.
@@ -151,12 +156,13 @@ export const SCENARIOS: Scenario[] = [
   },
   {
     id: "cross-country",
-    title: "Cross-country multi-day",
+    title: "Cross-country 4-day trip",
     rule: "Rules 1–6",
-    observe: "Several days of logs with repeated fuel + 10-hour rest stops.",
+    observe:
+      "Four days of logs with repeated fuel + 10-hour rest stops, end to end.",
     current: PASADENA,
     pickup: LOS_ANGELES,
-    dropoff: NEW_YORK,
+    dropoff: CHARLOTTE,
     cycleHoursUsed: 0,
   },
   {
