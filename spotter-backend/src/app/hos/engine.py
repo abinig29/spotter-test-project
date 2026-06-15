@@ -193,9 +193,16 @@ class _Simulation:
 
     def _finalize_warning(self):
         if self.incomplete:
-            self.warning = (
-                f"Cycle hours reached the 70-hour limit "
-                f"(used {self.cycle_used:.1f}h); trip not completable this cycle."
-            )
+            remaining = self._cap_remaining()
+            if remaining <= C.EPS:
+                self.warning = (
+                    f"Cycle hours reached the 70-hour limit "
+                    f"(used {self.cycle_used:.1f}h); trip not completable this cycle."
+                )
+            else:
+                self.warning = (
+                    f"Insufficient cycle hours remaining ({remaining:.1f}h left) "
+                    f"to complete this trip; trip not completable this cycle."
+                )
         elif self.cycle_used >= C.CYCLE_LIMIT_HOURS - C.EPS:
             self.warning = f"Cycle hours at the 70-hour limit (used {self.cycle_used:.1f}h)."
