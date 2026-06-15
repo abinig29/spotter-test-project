@@ -1,21 +1,26 @@
-import type { DayLog } from "@/lib/api-types";
-import { dutyLinePoints, STATUS_META, STATUS_ROWS } from "@/lib/log-grid";
+import { useEffect, useState } from "react";
 
-const HOUR_W = 40;
-const GRID_W = 24 * HOUR_W; // 960
-const LABEL_W = 128;
-const TOTAL_W = 80;
-const ROW_H = 48;
-const AXIS_H = 34;
-const GRID_H = STATUS_ROWS.length * ROW_H; // 144
-const WIDTH = LABEL_W + GRID_W + TOTAL_W;
-const HEIGHT = AXIS_H + GRID_H;
+import type { DayLog } from "@/lib/api-types";
+import { dutyLinePoints, GRID, STATUS_META, STATUS_ROWS } from "@/lib/log-grid";
+
+const HOUR_W = GRID.hourW;
+const GRID_W = GRID.gridW; // 960
+const LABEL_W = GRID.labelW;
+const TOTAL_W = GRID.totalW;
+const ROW_H = GRID.rowH;
+const AXIS_H = GRID.axisH;
+const GRID_H = GRID.gridH; // 192
+const WIDTH = GRID.width;
+const HEIGHT = GRID.height;
 const GRID_X = LABEL_W;
 const GRID_Y = AXIS_H;
 
 const INK = "#0f172a";
 const GRID_LINE = "#cbd5e1";
 const GRID_LINE_FAINT = "#e7ecf3";
+
+/** Trace draw-on duration. */
+const DRAW_MS = 2400;
 
 const QUARTERS = Array.from({ length: 24 * 4 + 1 }, (_, i) => i);
 const HOURS = Array.from({ length: 25 }, (_, i) => i);
@@ -27,10 +32,40 @@ function hourLabel(hour: number): string {
   return String(hour % 12);
 }
 
-export function LogGrid({ day }: { day: DayLog }) {
+export function LogGrid({
+  day,
+  animate = false,
+  showTotals = true,
+}: {
+  day: DayLog;
+  /** When true, the duty-status trace draws on left-to-right on mount. */
+  animate?: boolean;
+  /**
+   * When false, the per-row total values are omitted (the "Total" header and
+   * divider stay). The interactive grid hides them so it can render rolling
+   * HTML totals over the column instead.
+   */
+  showTotals?: boolean;
+}) {
   const points = dutyLinePoints(day.entries, GRID_W, ROW_H)
     .map(([x, y]) => `${(GRID_X + x).toFixed(1)},${(GRID_Y + y).toFixed(1)}`)
     .join(" ");
+
+  // Reveal the trace left-to-right by retracting a dash gap. `pathLength={1}`
+  // normalizes the geometry so the dash math is unit-based (no measuring).
+  const [drawn, setDrawn] = useState(!animate);
+  useEffect(() => {
+    if (!animate) return;
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (reduce) {
+      setDrawn(true);
+      return;
+    }
+    const id = requestAnimationFrame(() => setDrawn(true));
+    return () => cancelAnimationFrame(id);
+  }, [animate]);
 
   return (
     <svg
@@ -159,6 +194,16 @@ export function LogGrid({ day }: { day: DayLog }) {
           strokeWidth={2.4}
           strokeLinejoin="round"
           strokeLinecap="round"
+          {...(animate
+            ? {
+                pathLength: 1,
+                style: {
+                  strokeDasharray: 1,
+                  strokeDashoffset: drawn ? 0 : 1,
+                  transition: `stroke-dashoffset ${DRAW_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`,
+                },
+              }
+            : {})}
         />
       )}
 
@@ -181,24 +226,25 @@ export function LogGrid({ day }: { day: DayLog }) {
       >
         Total
       </text>
-      {STATUS_ROWS.map((status, row) => {
-        const y = GRID_Y + row * ROW_H + ROW_H / 2;
-        return (
-          <text
-            key={`t-${status}`}
-            x={GRID_X + GRID_W + TOTAL_W / 2}
-            y={y}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fontSize="13"
-            fontWeight="600"
-            fill={INK}
-            style={{ fontVariantNumeric: "tabular-nums" }}
-          >
-            {day.totals[status].toFixed(1)}
-          </text>
-        );
-      })}
+      {showTotals &&
+        STATUS_ROWS.map((status, row) => {
+          const y = GRID_Y + row * ROW_H + ROW_H / 2;
+          return (
+            <text
+              key={`t-${status}`}
+              x={GRID_X + GRID_W + TOTAL_W / 2}
+              y={y}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize="13"
+              fontWeight="600"
+              fill={INK}
+              style={{ fontVariantNumeric: "tabular-nums" }}
+            >
+              {day.totals[status].toFixed(1)}
+            </text>
+          );
+        })}
     </svg>
   );
 }

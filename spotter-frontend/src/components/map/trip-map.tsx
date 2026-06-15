@@ -53,12 +53,12 @@ function StopPopup({
   return (
     <div className="min-w-[130px] max-w-[190px] px-2.5 py-2">
       <p
-        className="text-[10px] font-semibold uppercase tracking-wider"
+        className="font-semibold text-[10px] uppercase tracking-wider"
         style={{ color: PIN_COLORS[type] }}
       >
         {STOP_LABEL[type]}
       </p>
-      <p className="text-[12px] font-medium leading-snug text-foreground">
+      <p className="font-medium text-[12px] text-foreground leading-snug">
         {location}
       </p>
       {parts.length > 0 && (

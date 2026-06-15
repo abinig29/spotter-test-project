@@ -1,6 +1,7 @@
 import { Maximize2 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
+import { InteractiveLogGrid } from "@/components/logs/interactive-log-grid";
 import { LogGrid } from "@/components/logs/log-grid";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,12 +65,15 @@ function LogSheetBody({
   action,
   minGridWidth = 680,
   reserveCloseSpace = false,
+  interactive = false,
 }: {
   log: DayLog;
   action?: ReactNode;
   minGridWidth?: number;
   /** Pads the title band's end so the dialog close button can't overlap the date. */
   reserveCloseSpace?: boolean;
+  /** Modal-only: animated trace, hover scrubber, segment popovers, synced legend. */
+  interactive?: boolean;
 }) {
   const { weekday, long } = formatDate(log.date);
 
@@ -111,30 +115,36 @@ function LogSheetBody({
         <FormField label="Driver signature" value="N/A" />
       </dl>
 
-      {/* The grid */}
-      <div className="overflow-x-auto px-4 py-4">
-        <div style={{ minWidth: minGridWidth }}>
-          <LogGrid day={log} />
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 pt-1 pb-4">
-        {STATUS_ROWS.map((status) => {
-          const meta = STATUS_META[status];
-          return (
-            <span
-              key={status}
-              className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
-            >
-              {meta.short}
-              <span className="font-semibold text-foreground tabular-nums">
-                {(log.totals[status] ?? 0).toFixed(1)}
-              </span>
-            </span>
-          );
-        })}
-      </div>
+      {/* The grid + legend. The modal gets the interactive version (animated
+          trace, hover scrubber, segment popovers, synced rolling legend); the
+          inline card stays static and print-friendly. */}
+      {interactive ? (
+        <InteractiveLogGrid day={log} minGridWidth={minGridWidth} />
+      ) : (
+        <>
+          <div className="overflow-x-auto px-4 py-4">
+            <div style={{ minWidth: minGridWidth }}>
+              <LogGrid day={log} />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 pt-1 pb-4">
+            {STATUS_ROWS.map((status) => {
+              const meta = STATUS_META[status];
+              return (
+                <span
+                  key={status}
+                  className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
+                >
+                  {meta.short}
+                  <span className="font-semibold text-foreground tabular-nums">
+                    {(log.totals[status] ?? 0).toFixed(1)}
+                  </span>
+                </span>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* Remarks */}
       {log.remarks.length > 0 && (
@@ -191,7 +201,12 @@ export function LogSheet({ log }: { log: DayLog }) {
           Day {log.day} — Driver's Daily Log, {weekday}, {long}
         </DialogTitle>
         <div className="min-h-0 overflow-y-auto">
-          <LogSheetBody log={log} minGridWidth={760} reserveCloseSpace />
+          <LogSheetBody
+            log={log}
+            minGridWidth={760}
+            reserveCloseSpace
+            interactive
+          />
         </div>
       </DialogContent>
     </Dialog>

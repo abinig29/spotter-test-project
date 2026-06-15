@@ -88,6 +88,92 @@ export function rowIndex(status: DutyStatus): number {
 }
 
 /**
+ * Shared SVG geometry for the duty-status grid. Lives here (not in the
+ * component) so the interactive overlay can map pointer position onto the same
+ * coordinate system the SVG draws in.
+ */
+export const GRID = {
+  hourW: 40,
+  labelW: 128,
+  totalW: 80,
+  rowH: 48,
+  axisH: 34,
+  get gridW() {
+    return 24 * this.hourW;
+  },
+  get gridH() {
+    return STATUS_ROWS.length * this.rowH;
+  },
+  get width() {
+    return this.labelW + this.gridW + this.totalW;
+  },
+  get height() {
+    return this.axisH + this.gridH;
+  },
+} as const;
+
+/** Formats a minute-of-day as a zero-padded 24h clock, e.g. 870 -> "14:30". */
+export function minuteToTime(minute: number): string {
+  const clamped = Math.max(0, Math.min(MINUTES_PER_DAY, Math.round(minute)));
+  const h = Math.floor(clamped / 60);
+  const m = clamped % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * The duty status active at a given minute-of-day. Boundaries belong to the
+ * entry that starts there; the final minute (1440) belongs to the last entry.
+ * Returns null when there are no entries.
+ */
+export function statusAtMinute(
+  entries: LogEntry[],
+  minute: number,
+): DutyStatus | null {
+  if (entries.length === 0) return null;
+  for (const entry of entries) {
+    const startMin = timeToMinutes(entry.start);
+    let endMin = timeToMinutes(entry.end);
+    if (endMin <= startMin) endMin = MINUTES_PER_DAY;
+    if (minute >= startMin && minute < endMin) return entry.status;
+  }
+  // At or past end-of-day, fall to the last entry.
+  return entries[entries.length - 1]?.status ?? null;
+}
+
+export interface EntrySegment extends RowSegment {
+  /** The source log entry, for surfacing location/note on hover. */
+  entry: LogEntry;
+  /** Row index within STATUS_ROWS (0 = top). */
+  row: number;
+  /** Span length in hours, with end-of-day normalization. */
+  durationHours: number;
+}
+
+/**
+ * Like {@link buildRowSegments} but keeps each entry and adds the row index and
+ * duration — the shape the interactive overlay needs for hit-testing and
+ * per-segment detail popovers.
+ */
+export function buildEntrySegments(
+  entries: LogEntry[],
+  width: number,
+): EntrySegment[] {
+  return entries.map((entry) => {
+    const startMin = timeToMinutes(entry.start);
+    let endMin = timeToMinutes(entry.end);
+    if (endMin <= startMin) endMin = MINUTES_PER_DAY;
+    return {
+      entry,
+      status: entry.status,
+      x1: (startMin / MINUTES_PER_DAY) * width,
+      x2: (endMin / MINUTES_PER_DAY) * width,
+      row: rowIndex(entry.status),
+      durationHours: (endMin - startMin) / 60,
+    };
+  });
+}
+
+/**
  * Builds the continuous duty-status trace as polyline points. Each entry draws a
  * horizontal segment in its row; consecutive entries share an x boundary, so the
  * connecting points read as vertical drops between rows.

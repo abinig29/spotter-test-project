@@ -77,7 +77,7 @@ function StepNode({
           </span>
         </span>
       ) : (
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-border bg-background font-medium text-muted-foreground text-[10px]">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-border bg-background font-medium text-[10px] text-muted-foreground">
           {n}
         </span>
       )}
