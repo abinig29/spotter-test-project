@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
+    "dev": "node init && vite dev",
+    "build": "node init && vite build",
     "serve": "vite preview",
-    "start": "vite",
+    "start": "node init && vite",
     "check-types": "tsc --noEmit",
     "check": "biome check --write ."
   },
