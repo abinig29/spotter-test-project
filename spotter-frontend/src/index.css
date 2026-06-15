@@ -176,8 +176,26 @@
   .print-only {
     display: block;
   }
+  /* The screen layout pins the panel to the viewport height and scrolls the
+     log list in an overflow container. In print that clips everything past the
+     first page, so later days vanish. Release the height/overflow constraints
+     on the layout and every descendant so the full list flows naturally across
+     as many pages as it needs. Only height/overflow are touched — flex layouts
+     inside each log sheet are left intact. */
+  /* biome-ignore lint/complexity/noImportantStyles: must defeat Tailwind utility heights/overflow when printing */
+  html,
+  body,
+  main,
+  main * {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
   .log-sheet {
     break-inside: avoid;
     page-break-inside: avoid;
+    /* Space sheets apart so the avoid-break rule has room to push to a new page. */
+    margin-bottom: 0.75rem;
   }
 }

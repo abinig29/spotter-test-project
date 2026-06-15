@@ -98,7 +98,7 @@ export function ResultsView({
         {plan.route.stops.length > 0 && (
           <section
             aria-label="Stops"
-            className="shrink-0 border-b bg-card px-4 py-3"
+            className="no-print shrink-0 border-b bg-card px-4 py-3"
           >
             <div className="mb-2.5 flex items-center gap-2">
               <h2 className="font-semibold text-[11px] text-muted-foreground uppercase tracking-wider">

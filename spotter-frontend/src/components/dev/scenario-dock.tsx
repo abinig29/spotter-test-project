@@ -28,7 +28,7 @@ export function ScenarioDock({ onSelect }: ScenarioDockProps) {
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger
         className={cn(
-          "fixed right-4 bottom-4 z-[1300] inline-flex items-center gap-1.5 rounded-full border border-border bg-card/95 py-2 pr-3.5 pl-3 font-medium text-foreground text-xs shadow-lg ring-1 ring-foreground/5 backdrop-blur transition-all",
+          "no-print fixed right-4 bottom-4 z-[1300] inline-flex items-center gap-1.5 rounded-full border border-border bg-card/95 py-2 pr-3.5 pl-3 font-medium text-foreground text-xs shadow-lg ring-1 ring-foreground/5 backdrop-blur transition-all",
           "hover:bg-muted hover:shadow-xl focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
           "data-[popup-open]:bg-muted",
         )}
