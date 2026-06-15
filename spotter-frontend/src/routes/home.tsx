@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-
+import { ScenarioDock } from "@/components/dev/scenario-dock";
 import {
   type CandidateMarker,
   type MapPin,
@@ -13,6 +13,7 @@ import { WizardPanel } from "@/components/wizard/wizard-panel";
 import { planTrip, TripPlanError } from "@/lib/api";
 import type { TripLocation, TripPlanResponse } from "@/lib/api-types";
 import { type AddressResult, reverseGeocode } from "@/lib/geocode";
+import type { Scenario } from "@/lib/scenarios";
 import { type PinKey, useTripStore } from "@/store/trip-store";
 
 function buildPins(
@@ -169,14 +170,28 @@ export default function Home() {
     mutation.reset();
   }
 
+  // Load a preset scenario: fill the wizard, recenter on the start, and return
+  // to the form so the user can review and press Calculate.
+  function handleLoadScenario(scenario: Scenario) {
+    store.loadScenario(scenario);
+    setCandidate(null);
+    setFocus([scenario.current.lat, scenario.current.lng]);
+    setPlan(null);
+    setErrorMessage(null);
+    mutation.reset();
+  }
+
   if (plan) {
     return (
-      <ResultsView
-        plan={plan}
-        current={store.current}
-        onReset={handleReset}
-        onEdit={handleEdit}
-      />
+      <>
+        <ResultsView
+          plan={plan}
+          current={store.current}
+          onReset={handleReset}
+          onEdit={handleEdit}
+        />
+        <ScenarioDock onSelect={handleLoadScenario} />
+      </>
     );
   }
 
@@ -224,6 +239,8 @@ export default function Home() {
           </div>
         )}
       </aside>
+
+      <ScenarioDock onSelect={handleLoadScenario} />
     </main>
   );
 }

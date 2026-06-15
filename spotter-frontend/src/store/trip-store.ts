@@ -17,6 +17,12 @@ interface TripState {
   changePin: (which: PinKey) => void;
   back: () => void;
   setCycleHours: (value: number) => void;
+  loadScenario: (scenario: {
+    current: TripLocation;
+    pickup: TripLocation;
+    dropoff: TripLocation;
+    cycleHoursUsed: number;
+  }) => void;
   reset: () => void;
 }
 
@@ -57,6 +63,14 @@ export const useTripStore = create<TripState>()(
           return { step: STEPS[Math.max(0, index - 1)] };
         }),
       setCycleHours: (value) => set({ cycleHoursUsed: value }),
+      loadScenario: ({ current, pickup, dropoff, cycleHoursUsed }) =>
+        set({
+          current,
+          pickup,
+          dropoff,
+          cycleHoursUsed,
+          step: "complete",
+        }),
       reset: () =>
         set({
           step: "current",

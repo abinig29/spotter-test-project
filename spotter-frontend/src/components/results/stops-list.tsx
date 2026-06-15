@@ -67,7 +67,7 @@ export function StopsList({
   }
 
   return (
-    <ol className="-mx-1 flex gap-1 overflow-x-auto px-1 pt-1.5 pb-1">
+    <ol className="-mx-1 flex gap-1 overflow-x-auto scrollbar-none px-1 pt-1.5 pb-1">
       {rows.map((row, i) => {
         const last = i === rows.length - 1;
         const color = PIN_COLORS[row.type];

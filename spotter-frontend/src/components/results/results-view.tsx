@@ -40,7 +40,7 @@ export function ResultsView({
   return (
     <main className="flex h-svh flex-col lg:flex-row">
       {/* Data panel */}
-      <div className="order-2 flex min-h-0 flex-1 flex-col border-t lg:order-1 lg:border-t-0 lg:border-r">
+      <div className="order-2 flex min-h-0 min-w-0 flex-1 flex-col border-t lg:order-1 lg:w-1/2 lg:border-t-0 lg:border-r">
         {/* Document title — only rendered in the printed / saved PDF */}
         <div className="print-only mb-4 border-b pb-3">
           <h1 className="font-semibold text-base tracking-tight">
@@ -109,16 +109,12 @@ export function ResultsView({
                 Tap to locate on map
               </span>
             </div>
-            <div className="relative">
-              <StopsList
-                plan={plan}
-                current={current}
-                onSelect={setFocusStop}
-                activeKey={focusStop?.key}
-              />
-              {/* Right-edge fade hints at horizontal scroll when stops overflow */}
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l from-card to-transparent" />
-            </div>
+            <StopsList
+              plan={plan}
+              current={current}
+              onSelect={setFocusStop}
+              activeKey={focusStop?.key}
+            />
           </section>
         )}
 
